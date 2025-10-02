@@ -1,16 +1,13 @@
-import { Metadata } from 'next';
-import InshortsClient from './inshorts-client';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Quick Reads | The Cliff News',
-  description: 'Get the latest news in 60 words or less. Quick, digestible news stories for busy readers.',
-  openGraph: {
-    title: 'Quick Reads - Latest News in 60 Words | The Cliff News',
-    description: 'Get the latest news in 60 words or less. Quick, digestible news stories for busy readers.',
-    type: 'website',
-  },
-};
+interface PageProps {
+  params: Promise<{
+    locale: string;
+  }>;
+}
 
-export default function InshortsPage() {
-  return <InshortsClient />;
+export default async function InshortsPage({ params }: PageProps) {
+  const { locale } = await params;
+  // Redirect to quick-reads for backwards compatibility
+  redirect(`/${locale}/quick-reads`);
 }

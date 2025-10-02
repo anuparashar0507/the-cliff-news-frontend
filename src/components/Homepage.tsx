@@ -1,16 +1,14 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Header from "./Header";
-import StockTicker from "./StockTicker";
+import ScrollingTicker from "./ScrollingTicker";
 import EnhancedHeroSection from "./EnhancedHeroSection";
 import NewsCard from "./NewsCard";
-import QuickReadCard from "./QuickReadCard";
-import EnhancedCategorySection from "./EnhancedCategorySection";
-import CombinedCategorySection from "./CombinedCategorySection";
-import HorizontalVideoScroll from "./HorizontalVideoScroll";
-import HighlightsSection from "./HighlightsSection";
+import QuickReadsSection from "./QuickReadsSection";
+import DynamicCategorySections from "./DynamicCategorySections";
+import VideosBytesSection from "./VideosBytesSection";
+import HomepageImageGrid from "./HomepageImageGrid";
 import HoroscopeSection from "./HoroscopeSection";
-import Footer from "./Footer";
+import { Images, Clock } from "lucide-react";
 import {
   getArticles,
   getTopStories,
@@ -18,234 +16,139 @@ import {
   getQuickReads,
   getHighlights,
   getYouTubeShorts,
+  getNit,
 } from "@/lib/api";
 
 const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
   // Convert locale to backend language format
   const language = locale === 'hi' ? 'HINDI' : 'ENGLISH';
 
-  // Fetch data server-side for SEO with language filtering
+  // Fetch critical data first
   const articlesData = await getArticles(10, language);
-  const quickReadsData = await getQuickReads(5, language);
-  const breakingNewsData = await getBreakingNews(3, language);
   const topStoriesData = await getTopStories(4, language);
-  const highlightsData = await getHighlights(6);
-  const videoBytesData = await getYouTubeShorts(10);
+
+  // Then fetch less critical data with error fallbacks
+  const [quickReadsData, breakingNewsData, highlightsData, nitData, videoBytesData] = await Promise.allSettled([
+    getQuickReads(5, language),
+    getBreakingNews(3, language),
+    getHighlights(5),
+    getNit(5),
+    getYouTubeShorts(10)
+  ]).then(results => results.map(result => result.status === 'fulfilled' ? result.value : null));
 
   console.log('Current locale:', locale, 'Language:', language);
 
-  // Filter articles by category
+  // Filter articles by category for hero section
   const articles = (articlesData?.articles as any[]) || [];
-
-  // Individual category sections
-  const nationalNews = articles.filter(
-    (article) => article.category?.name === "National"
-  );
-  const worldNews = articles.filter(
-    (article) => article.category?.name === "World" || article.category?.name === "International"
-  );
-  const entertainmentNews = articles.filter(
-    (article) => article.category?.name === "Entertainment"
-  );
-  const politicsNews = articles.filter(
-    (article) => article.category?.name === "Politics"
-  );
-
-  // Combined sections
-  const scienceTechNews = articles.filter(
-    (article) =>
-      article.category?.name === "Science" ||
-      article.category?.name === "Technology" ||
-      article.category?.name === "Tech"
-  );
-  const lifestyleTravelNews = articles.filter(
-    (article) =>
-      article.category?.name === "Lifestyle" ||
-      article.category?.name === "Travel"
-  );
-  const sportsBusinessNews = articles.filter(
-    (article) =>
-      article.category?.name === "Sports" ||
-      article.category?.name === "Business" ||
-      article.category?.name === "Finance"
-  );
 
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
-      {/* Stock Market Ticker */}
-      <StockTicker />
+      {/* Live Market Ticker */}
+      <ScrollingTicker />
 
       {/* Enhanced Hero Section */}
       <EnhancedHeroSection featuredArticles={articles} />
 
       {/* Top Stories - Full Width */}
-      <section className="py-12 bg-muted/30">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="headline-medium text-brand-navy mb-2">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
                 Top Stories
               </h2>
-              <div className="w-12 h-1 bg-primary rounded-full"></div>
-            </div>
-          </div>
-
-          {/* Full Width Top Stories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {((topStoriesData?.topStories as any[]) || []).map((article) => (
-              <NewsCard key={article.id} article={article} variant="featured" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Reads Preview */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="headline-medium text-foreground mb-2">
-                Quick Reads
-              </h2>
-              <div className="w-12 h-1 bg-primary rounded-full"></div>
-              <p className="body-medium text-muted-foreground mt-2">
-                Stay informed with bite-sized news updates
+              <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              <p className="text-gray-600 dark:text-gray-300 mt-3">
+                The most important news happening right now
               </p>
             </div>
-
-            <Link
-              href="/inshorts"
-              className="inline-flex items-center border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 rounded-md text-sm font-medium transition-colors group"
-            >
-              View All Quick Reads
-              <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
-            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {((quickReadsData?.inshorts as any[]) || []).map((item) => (
-              <QuickReadCard key={item.id} item={item} />
+          {/* Enhanced Top Stories Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
+            {((topStoriesData?.topStories as any[]) || []).map((article, index) => (
+              <div key={article.id} className={`${index < 2 ? 'xl:col-span-2' : ''}`}>
+                <NewsCard article={article} variant="featured" />
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-
-      {/* National News Section */}
-      <section className="py-12 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="headline-medium text-brand-navy mb-2">
-                National News
-              </h2>
-              <div className="w-12 h-1 bg-primary rounded-full"></div>
+      {/* Breaking News Banner */}
+      {breakingNewsData?.articles && breakingNewsData.articles.length > 0 && (
+        <section className="py-8 bg-gradient-to-r from-red-600 to-red-700">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center mb-4">
+              <div className="flex items-center">
+                <span className="bg-white text-red-600 px-3 py-1 rounded-full text-sm font-bold mr-4 animate-pulse">
+                  🚨 BREAKING
+                </span>
+                <h2 className="text-white text-xl font-bold">Latest Breaking News</h2>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {((breakingNewsData?.articles as any[]) || []).slice(0, 3).map((article) => (
+                <div key={article.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                  <h3 className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
+                    {article.title}
+                  </h3>
+                  <Link
+                    href={`/${locale}/article/${article.slug}`}
+                    className="text-white/80 hover:text-white text-xs inline-flex items-center"
+                  >
+                    Read more <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {nationalNews.map((article) => (
-              <NewsCard key={article.id} article={article} variant="default" />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* World News Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="headline-medium text-foreground mb-2">
-                World News
-              </h2>
-              <div className="w-12 h-1 bg-primary rounded-full"></div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {worldNews.map((article) => (
-              <NewsCard key={article.id} article={article} variant="default" />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Quick Reads Section */}
+      <QuickReadsSection locale={locale} />
 
-      {/* Enhanced Category Sections */}
-      <EnhancedCategorySection
-        title="Politics"
-        articles={politicsNews}
-        layout="hero"
-        backgroundColor="muted"
-        categorySlug="politics"
-      />
-
-      <EnhancedCategorySection
-        title="Entertainment"
-        articles={entertainmentNews}
-        layout="featured"
-        backgroundColor="default"
-        categorySlug="entertainment"
-      />
-
-      {/* Breaking News Section */}
-      <section className="py-12 bg-red-50 dark:bg-red-950/20">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="headline-medium text-red-700 dark:text-red-400 mb-2">
-                🚨 Breaking News
-              </h2>
-              <div className="w-12 h-1 bg-red-500 rounded-full"></div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {((breakingNewsData?.articles as any[]) || []).map((article) => (
-              <NewsCard key={article.id} article={article} variant="breaking" />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Combined Category Section */}
-      <CombinedCategorySection
-        title="Science & Technology + Lifestyle"
-        subtitle="Explore the latest in tech innovations and lifestyle trends"
-        backgroundColor="accent"
-        categories={[
-          { name: "Science & Technology", articles: scienceTechNews, color: "bg-blue-500" },
-          { name: "Lifestyle & Travel", articles: lifestyleTravelNews, color: "bg-green-500" },
-          { name: "Sports & Business", articles: sportsBusinessNews, color: "bg-orange-500" }
-        ]}
+      {/* Dynamic Category Sections - All Categories */}
+      <DynamicCategorySections
+        language={language}
+        excludeCategories={[]} // Show all categories
       />
 
       {/* Video Bytes Section */}
-      <section className="py-12 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="headline-medium text-brand-navy mb-2">
-                Video Bytes
-              </h2>
-              <div className="w-12 h-1 bg-primary rounded-full"></div>
-              <p className="body-medium text-muted-foreground mt-2">
-                Quick video updates from around the world
-              </p>
-            </div>
-          </div>
-          <HorizontalVideoScroll videos={videoBytesData?.shorts || []} maxVideos={10} />
-        </div>
-      </section>
+      <VideosBytesSection videos={(videoBytesData as any)?.shorts || []} maxVideos={4} />
 
-      {/* Highlights Section */}
-      <HighlightsSection highlights={highlightsData?.highlights || []} />
+      {/* News Highlights Section */}
+      {(highlightsData as any)?.highlights && (highlightsData as any).highlights.length > 0 && (
+        <HomepageImageGrid
+          title="News Highlights"
+          subtitle="Visual highlights and important stories from The Cliff News"
+          items={(highlightsData as any).highlights}
+          type="highlights"
+          locale={locale}
+          icon={<Images className="h-8 w-8 text-orange-500" />}
+          bgColor="bg-orange-50 dark:bg-orange-900/10"
+          linkColor="bg-orange-500 hover:bg-orange-600"
+        />
+      )}
+
+      {/* Notice Inviting Tenders (NIT) Section */}
+      {(nitData as any)?.nits && (nitData as any).nits.length > 0 && (
+        <HomepageImageGrid
+          title="Notice Inviting Tenders (NIT)"
+          subtitle="Official tender notices and procurement announcements"
+          items={(nitData as any).nits}
+          type="nit"
+          locale={locale}
+          icon={<Clock className="h-8 w-8 text-blue-500" />}
+          bgColor="bg-blue-50 dark:bg-blue-900/10"
+          linkColor="bg-blue-500 hover:bg-blue-600"
+        />
+      )}
 
       {/* Horoscope Section */}
       <HoroscopeSection />
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 };

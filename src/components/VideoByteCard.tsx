@@ -1,13 +1,37 @@
 import { Play, Heart, Share2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { YouTubeShort } from "@/services";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface VideoByteCardProps {
-  video: YouTubeShort;
+  video: {
+    id: string;
+    title: string;
+    description: string;
+    videoUrl: string;
+    thumbnail: string;
+    duration: string | number;
+    category?: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+    likes?: number;
+    views?: number;
+    publishedAt: string;
+    channelName?: string;
+    channelUrl?: string;
+    tags?: string[];
+    isFeatured?: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 const VideoByteCard = ({ video }: VideoByteCardProps) => {
+  const pathname = usePathname();
+  const currentLocale = pathname?.split('/')[1] || 'en';
+
   const formatViews = (views: number | undefined) => {
     if (!views || views === 0) return "0";
     if (views >= 1000000) {
@@ -18,10 +42,24 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
     return views.toString();
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  const formatDuration = (duration: string | number) => {
+    if (typeof duration === 'number') {
+      const mins = Math.floor(duration / 60);
+      const secs = duration % 60;
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    // Handle ISO 8601 duration format (PT1M30S)
+    if (typeof duration === 'string' && duration.startsWith('PT')) {
+      const match = duration.match(/PT(?:(\d+)M)?(?:(\d+)S)?/);
+      if (match) {
+        const mins = parseInt(match[1] || '0');
+        const secs = parseInt(match[2] || '0');
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+      }
+    }
+
+    return duration.toString();
   };
 
   return (
@@ -34,7 +72,10 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
         />
 
         {/* Play Button Overlay */}
-        <Link to="/bytes" className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <Link
+          href={`/${currentLocale}/videos`}
+          className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        >
           <Button
             size="lg"
             className="rounded-full bg-white/90 text-black hover:bg-white pointer-events-none"
@@ -49,15 +90,17 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
         </div>
 
         {/* Category Badge */}
-        <div className="absolute top-2 left-2">
-          <span
-            className={`category-badge ${
-              video.category?.name?.toLowerCase() || "uncategorized"
-            } text-xs`}
-          >
-            {video.category?.name || "Uncategorized"}
-          </span>
-        </div>
+        {video.category && (
+          <div className="absolute top-2 left-2">
+            <span
+              className={`category-badge ${
+                video.category.name?.toLowerCase() || "uncategorized"
+              } text-xs`}
+            >
+              {video.category.name}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="p-4">
@@ -92,7 +135,7 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
             </Button>
           </div>
 
-          <Link to="/bytes">
+          <Link href={`/${currentLocale}/videos`}>
             <Button variant="outline" size="sm" className="text-xs">
               <Play className="h-3 w-3 mr-1" />
               Watch

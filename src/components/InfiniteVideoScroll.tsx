@@ -15,6 +15,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getYouTubeShorts } from "@/lib/api";
 
 interface VideoData {
   id: string;
@@ -39,19 +40,23 @@ interface VideoCardProps {
   isActive: boolean;
   isMuted: boolean;
   onToggleMute: () => void;
+  onNavigateHome?: () => void;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggleMute }) => {
+const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggleMute, onNavigateHome }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (videoRef.current) {
       if (isActive && isPlaying) {
-        videoRef.current.play();
+        videoRef.current.play().catch(console.error);
       } else {
         videoRef.current.pause();
+        videoRef.current.currentTime = 0; // Reset to beginning when not active
       }
     }
   }, [isActive, isPlaying]);
@@ -70,8 +75,31 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
     }
   }, [isActive]);
 
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
   const handleVideoClick = () => {
-    setIsPlaying(!isPlaying);
+    if (!hasError) {
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleVideoLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
+
+  const handleVideoError = () => {
+    setIsLoading(false);
+    setHasError(true);
+    setIsPlaying(false);
   };
 
   const formatViews = (views: number) => {
@@ -93,10 +121,30 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
         loop
         playsInline
         onClick={handleVideoClick}
+        onLoadedData={handleVideoLoad}
+        onError={handleVideoError}
+        preload="metadata"
       >
         <source src={video.videoUrl} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
+
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="text-white text-center">
+            <div className="text-4xl mb-2">⚠️</div>
+            <p className="text-sm">Video unavailable</p>
+          </div>
+        </div>
+      )}
 
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
@@ -191,6 +239,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
             <Button
               variant="ghost"
               size="sm"
+              onClick={onNavigateHome}
               className="text-white hover:bg-white/20"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -218,7 +267,17 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
   );
 };
 
-const InfiniteVideoScroll = () => {
+interface InfiniteVideoScrollProps {
+  isDesktop?: boolean;
+  onNavigateHome?: () => void;
+  currentLocale?: string;
+}
+
+const InfiniteVideoScroll = ({
+  isDesktop = false,
+  onNavigateHome,
+  currentLocale = 'en'
+}: InfiniteVideoScrollProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -237,110 +296,92 @@ const InfiniteVideoScroll = () => {
     }
   }, []);
 
-  // Mock video data - in production, fetch from API
-  const [videos, setVideos] = useState<VideoData[]>([
-    {
-      id: '1',
-      title: 'Breaking: Major Political Development Shakes Nation',
-      description: 'Latest updates on the political situation that has captured nationwide attention with significant implications.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      thumbnail: '/api/placeholder/400/600',
-      duration: '2:30',
-      views: 125000,
-      likes: 3200,
-      comments: 456,
-      category: 'Breaking News',
-      publishedAt: '2024-09-28T10:00:00Z',
-      author: {
-        name: 'The Cliff News',
-        avatar: '/api/placeholder/40/40'
+  // Fetch real YouTube videos data from API
+  const [videos, setVideos] = useState<VideoData[]>([]);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+
+  // Fetch initial videos on component mount
+  useEffect(() => {
+    const fetchInitialVideos = async () => {
+      try {
+        setIsLoadingInitial(true);
+        const response = await getYouTubeShorts(20);
+
+        if (response?.shorts) {
+          // Map YouTube API data to VideoData format
+          const mappedVideos: VideoData[] = response.shorts.map((short: any) => ({
+            id: short.id || Math.random().toString(),
+            title: short.title || 'Untitled Video',
+            description: short.description || '',
+            videoUrl: short.youtubeUrl || short.videoUrl || '',
+            thumbnail: short.thumbnail || '/api/placeholder/400/600',
+            duration: short.duration || '0:00',
+            views: short.viewCount || short.views || 0,
+            likes: short.likeCount || short.likes || 0,
+            comments: 0, // Comments not available from API
+            category: short.category?.name || 'News',
+            publishedAt: short.publishedAt || new Date().toISOString(),
+            author: {
+              name: short.channelName || 'The Cliff News',
+              avatar: '/api/placeholder/40/40'
+            }
+          }));
+
+          setVideos(mappedVideos);
+        }
+      } catch (error) {
+        console.error('Failed to fetch YouTube videos:', error);
+        // Keep empty array as fallback
+      } finally {
+        setIsLoadingInitial(false);
       }
-    },
-    {
-      id: '2',
-      title: 'Sports Highlight: Championship Finals Draw Record Viewers',
-      description: 'Exciting moments from the championship finals that broke all previous viewership records.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      thumbnail: '/api/placeholder/400/600',
-      duration: '1:45',
-      views: 89000,
-      likes: 2100,
-      comments: 234,
-      category: 'Sports',
-      publishedAt: '2024-09-28T08:30:00Z',
-      author: {
-        name: 'Sports Desk',
-        avatar: '/api/placeholder/40/40'
-      }
-    },
-    {
-      id: '3',
-      title: 'Technology: Revolutionary AI Breakthrough Announced',
-      description: 'Scientists reveal groundbreaking AI technology that could change how we interact with machines.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      thumbnail: '/api/placeholder/400/600',
-      duration: '3:15',
-      views: 67000,
-      likes: 1800,
-      comments: 167,
-      category: 'Technology',
-      publishedAt: '2024-09-28T06:15:00Z',
-      author: {
-        name: 'Tech Reporter',
-        avatar: '/api/placeholder/40/40'
-      }
-    },
-    {
-      id: '4',
-      title: 'Business: Market Surge Following Policy Changes',
-      description: 'Financial markets respond positively to new government policies with significant gains across sectors.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      thumbnail: '/api/placeholder/400/600',
-      duration: '2:00',
-      views: 45000,
-      likes: 1200,
-      comments: 89,
-      category: 'Business',
-      publishedAt: '2024-09-28T04:45:00Z',
-      author: {
-        name: 'Business Team',
-        avatar: '/api/placeholder/40/40'
-      }
-    }
-  ]);
+    };
+
+    fetchInitialVideos();
+  }, []);
 
   const loadMoreVideos = useCallback(async () => {
     if (isLoading) return;
 
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Fetch more videos from API
+      const response = await getYouTubeShorts(10);
 
-    // Add more mock videos
-    const newVideos: VideoData[] = [
-      {
-        id: `${videos.length + 1}`,
-        title: 'Entertainment: Celebrity News and Updates',
-        description: 'Latest news from the entertainment world with exclusive interviews and behind-the-scenes content.',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-        thumbnail: '/api/placeholder/400/600',
-        duration: '1:55',
-        views: 23000,
-        likes: 890,
-        comments: 45,
-        category: 'Entertainment',
-        publishedAt: '2024-09-28T02:30:00Z',
-        author: {
-          name: 'Entertainment Desk',
-          avatar: '/api/placeholder/40/40'
-        }
+      if (response?.shorts) {
+        // Map new YouTube API data to VideoData format
+        const newMappedVideos: VideoData[] = response.shorts.map((short: any) => ({
+          id: short.id || Math.random().toString(),
+          title: short.title || 'Untitled Video',
+          description: short.description || '',
+          videoUrl: short.youtubeUrl || short.videoUrl || '',
+          thumbnail: short.thumbnail || '/api/placeholder/400/600',
+          duration: short.duration || '0:00',
+          views: short.viewCount || short.views || 0,
+          likes: short.likeCount || short.likes || 0,
+          comments: 0, // Comments not available from API
+          category: short.category?.name || 'News',
+          publishedAt: short.publishedAt || new Date().toISOString(),
+          author: {
+            name: short.channelName || 'The Cliff News',
+            avatar: '/api/placeholder/40/40'
+          }
+        }));
+
+        // Filter out duplicates and add new videos
+        setVideos(prev => {
+          const existingIds = new Set(prev.map(v => v.id));
+          const uniqueNewVideos = newMappedVideos.filter(v => !existingIds.has(v.id));
+          return [...prev, ...uniqueNewVideos];
+        });
       }
-    ];
-
-    setVideos(prev => [...prev, ...newVideos]);
-    setIsLoading(false);
-  }, [isLoading, videos.length]);
+    } catch (error) {
+      console.error('Failed to load more videos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading]);
 
   const handleSwipe = (info: PanInfo) => {
     const threshold = 50;
@@ -393,6 +434,18 @@ const InfiniteVideoScroll = () => {
     }
   }, [currentIndex, videos.length, loadMoreVideos]);
 
+  // Show loading state while fetching initial videos
+  if (isLoadingInitial || videos.length === 0) {
+    return (
+      <div className="relative w-full h-screen overflow-hidden bg-black flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-lg">Loading videos...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       <motion.div
@@ -411,6 +464,7 @@ const InfiniteVideoScroll = () => {
               isActive={index === currentIndex}
               isMuted={isMuted}
               onToggleMute={() => setIsMuted(!isMuted)}
+              onNavigateHome={onNavigateHome}
             />
           </div>
         ))}

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   Play,
   Pause,
@@ -45,9 +47,13 @@ const HorizontalVideoScroll: React.FC<HorizontalVideoScrollProps> = ({
   const [likes, setLikes] = useState<{ [key: string]: boolean }>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const pathname = usePathname();
+  const currentLocale = pathname?.split('/')[1] || 'en';
 
   // Limit videos to maxVideos
   const displayVideos = videos.slice(0, maxVideos);
+
+  // No need for special navigation handling since we're using locale-aware routes
 
   const togglePlay = (videoId: string) => {
     const video = videoRefs.current[videoId];
@@ -287,14 +293,20 @@ const HorizontalVideoScroll: React.FC<HorizontalVideoScrollProps> = ({
         ))}
       </div>
 
-      {/* Show more indicator */}
-      {videos.length > maxVideos && (
-        <div className="text-center mt-4">
-          <p className="text-sm text-muted-foreground">
+      {/* View All Videos Button */}
+      <div className="text-center mt-6">
+        <Link href={`/${currentLocale}/videos`}>
+          <Button variant="outline" className="px-6 py-2">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View All Videos
+          </Button>
+        </Link>
+        {videos.length > maxVideos && (
+          <p className="text-sm text-muted-foreground mt-2">
             Showing {maxVideos} of {videos.length} videos
           </p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

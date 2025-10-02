@@ -28,9 +28,64 @@ const EnhancedCategorySection = ({
   const backgroundClasses = {
     default: "",
     muted: "bg-muted/30",
-    accent: "bg-gradient-to-r from-primary/5 to-primary/10",
+    accent: "bg-gradient-to-br from-primary/5 to-accent/10",
   };
 
+  // Dynamic category theming using backend category color
+  const getCategoryTheme = () => {
+    // Default icon mapping for common categories
+    const iconMap: Record<string, string> = {
+      politics: "🏛️",
+      entertainment: "🎬",
+      sports: "⚽",
+      technology: "💻",
+      business: "💼",
+      science: "🔬",
+      lifestyle: "✨",
+      travel: "✈️",
+      health: "🏥",
+      education: "📚",
+      environment: "🌱",
+      food: "🍽️",
+      fashion: "👗",
+      automotive: "🚗",
+      finance: "💰",
+      gaming: "🎮",
+      music: "🎵",
+      art: "🎨",
+      default: "📰"
+    };
+
+    // Get icon based on category name or use default
+    const categoryKey = title.toLowerCase().replace(/\s+/g, '');
+    const icon = iconMap[categoryKey] || iconMap.default;
+
+    // Use category color from articles if available, otherwise use default
+    const categoryColor = articles[0]?.category?.color;
+
+    if (categoryColor) {
+      // Convert hex color to text and background classes
+      return {
+        color: `text-primary`,
+        bgColor: `bg-primary/5`,
+        icon,
+        customStyle: {
+          '--category-color': categoryColor,
+          color: categoryColor
+        }
+      };
+    }
+
+    // Fallback to default theme
+    return {
+      color: "text-primary",
+      bgColor: "bg-primary/5",
+      icon,
+      customStyle: {}
+    };
+  };
+
+  const categoryTheme = getCategoryTheme();
   const displayArticles = articles.slice(0, maxArticles);
 
   if (displayArticles.length === 0) return null;
@@ -70,33 +125,28 @@ const EnhancedCategorySection = ({
   );
 
   const renderGridLayout = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {displayArticles.map((article) => (
-        <NewsCard key={article.id} article={article} />
+        <NewsCard key={article.id} article={article} variant="dw-style" />
       ))}
     </div>
   );
 
   return (
-    <section className={`py-16 ${backgroundClasses[backgroundColor]}`}>
+    <section className={`py-12 ${backgroundClasses[backgroundColor]}`}>
       <div className="container mx-auto px-4">
-        {/* Enhanced Section Header */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="relative">
-            <h2 className="headline-large text-brand-navy mb-3">{title}</h2>
-            <div className="w-16 h-1 bg-primary rounded-full"></div>
-            <div className="w-8 h-1 bg-primary/60 rounded-full mt-1"></div>
-            <p className="body-medium text-muted-foreground mt-4 max-w-md">
-              Stay updated with the latest {title.toLowerCase()} stories and developments
-            </p>
-          </div>
+        {/* Simple DW-style Section Header */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            {title}
+          </h2>
 
           {showViewAll && displayArticles.length > 0 && (
-            <Link href={`/category/${categorySlug || title.toLowerCase()}`}>
-              <Button variant="outline" size="lg" className="group">
-                Explore All {title}
-                <ArrowRight className="h-5 w-5 ml-2 transition-transform group-hover:translate-x-1" />
-              </Button>
+            <Link
+              href={`/category/${categorySlug || title.toLowerCase()}`}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              View all →
             </Link>
           )}
         </div>

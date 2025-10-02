@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Share2, Volume2, VolumeX, Clock, Eye, Calendar, User } from 'lucide-react';
+import { ArrowLeft, Share2, Volume2, VolumeX, Clock, Calendar } from 'lucide-react';
 import { FeaturedImage } from '@/components/FeaturedImage';
 import { useTranslations } from 'next-intl';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -39,7 +39,7 @@ export default function ArticleContent({
           `${process.env.NEXT_PUBLIC_API_URL}/api/articles/slug/${slug}?language=${language}`
         );
         const data = await response.json();
-        setArticle(data);
+        setArticle(data.article);
       } catch (error) {
         console.error('Error fetching article:', error);
       } finally {
@@ -66,21 +66,119 @@ export default function ArticleContent({
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
       } else {
-        // Clean HTML content for speech
-        const textContent = article.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        const text = `${article.title}. ${textContent}`;
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = locale === 'hi' ? 'hi-IN' : 'en-US';
-        utterance.rate = 0.8;
-        utterance.pitch = 1;
+        // Function to setup and speak
+        const setupAndSpeak = () => {
+          // Clean HTML content for speech
+          const textContent = article.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          const text = `${article.title}. ${textContent}`;
 
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
+          const utterance = new SpeechSynthesisUtterance(text);
 
-        utteranceRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
+          // Use article language from API response if available
+          const articleLanguage = article.language;
+          const hindiRegex = /[\u0900-\u097F]/;
+          const hasHindiText = hindiRegex.test(text);
+          const isHindiArticle = articleLanguage === 'HINDI' || locale === 'hi' || hasHindiText;
+
+          console.log('Speech Debug:', {
+            articleLanguage,
+            locale,
+            hasHindiText,
+            isHindiArticle,
+            textSample: text.substring(0, 50) + '...'
+          });
+
+          // Get available voices
+          const voices = window.speechSynthesis.getVoices();
+          console.log('Available voices:', voices.map(v => ({ name: v.name, lang: v.lang })));
+
+          let selectedVoice = null;
+
+          if (isHindiArticle) {
+            // Look for Hindi voice first
+            selectedVoice = voices.find(voice =>
+              voice.lang === 'hi-IN' ||
+              voice.lang === 'hi' ||
+              voice.lang.toLowerCase().includes('hindi') ||
+              voice.name.toLowerCase().includes('hindi')
+            );
+
+            if (selectedVoice) {
+              console.log('Using Hindi voice:', selectedVoice.name);
+            } else {
+              // Fallback to Indian English for Hindi content
+              selectedVoice = voices.find(voice =>
+                voice.lang === 'en-IN' ||
+                voice.name.toLowerCase().includes('india')
+              );
+
+              if (!selectedVoice) {
+                // Last resort: use any available voice but warn user
+                selectedVoice = voices[0];
+                console.warn('No Hindi or Indian voice found. Hindi text may not be pronounced correctly.');
+                alert('Hindi voice not available on your device. The text will be read with available voice which may not pronounce Hindi correctly.');
+              }
+              console.log('Using fallback voice:', selectedVoice?.name || 'none');
+            }
+          } else {
+            // Look for English voice
+            selectedVoice = voices.find(voice =>
+              voice.lang === 'en-US' ||
+              voice.lang === 'en-GB' ||
+              voice.lang.startsWith('en')
+            ) || voices[0];
+            console.log('Using English voice:', selectedVoice?.name || 'default');
+          }
+
+          // Set the voice and language
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            utterance.lang = selectedVoice.lang;
+          } else {
+            // This shouldn't happen, but just in case
+            utterance.lang = isHindiArticle ? 'hi-IN' : 'en-US';
+          }
+
+          console.log('Final speech config:', {
+            lang: utterance.lang,
+            voice: utterance.voice?.name,
+            voiceLang: utterance.voice?.lang,
+            rate: isHindiArticle ? 0.6 : 0.8
+          });
+
+          // Adjust speech parameters
+          utterance.rate = isHindiArticle ? 0.6 : 0.8;
+          utterance.pitch = 1;
+          utterance.volume = 1;
+
+          utterance.onstart = () => setIsSpeaking(true);
+          utterance.onend = () => setIsSpeaking(false);
+          utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event);
+            setIsSpeaking(false);
+          };
+
+          utteranceRef.current = utterance;
+          window.speechSynthesis.speak(utterance);
+        };
+
+        // Get voices first
+        const voices = window.speechSynthesis.getVoices();
+
+        if (voices.length === 0) {
+          // Voices not loaded yet, wait for them
+          console.log('Waiting for voices to load...');
+          window.speechSynthesis.addEventListener('voiceschanged', () => {
+            console.log('Voices loaded, starting speech...');
+            setupAndSpeak();
+          }, { once: true });
+
+          // Trigger voice loading by calling getVoices again
+          window.speechSynthesis.getVoices();
+        } else {
+          // Voices already loaded
+          setupAndSpeak();
+        }
       }
     }
   };
@@ -203,13 +301,6 @@ export default function ArticleContent({
 
         {/* Meta Information */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-8 pb-6 border-b">
-          {article.author && (
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span>{t('article.author', { author: article.author.name })}</span>
-            </div>
-          )}
-          
           {article.publishedAt && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -221,13 +312,6 @@ export default function ArticleContent({
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               <span>{t('article.minRead', { minutes: article.readTime })}</span>
-            </div>
-          )}
-
-          {article.viewCount && (
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              <span>{article.viewCount.toLocaleString()} views</span>
             </div>
           )}
         </div>

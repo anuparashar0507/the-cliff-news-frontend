@@ -10,6 +10,11 @@ interface SafeHtmlRendererProps {
 }
 
 export function SafeHtmlRenderer({ html, className }: SafeHtmlRendererProps) {
+  // Check if we have content to render
+  if (!html || html.trim() === '') {
+    return <div>No content available</div>;
+  }
+
   // Configure DOMPurify to allow safe HTML elements and attributes
   const cleanHtml = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
@@ -25,122 +30,29 @@ export function SafeHtmlRenderer({ html, className }: SafeHtmlRendererProps) {
       'href', 'target', 'rel',
       'src', 'alt', 'width', 'height',
       'class', 'id',
-      'style'
+      'style',
+      'data-start', 'data-end'
     ],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
   });
 
-  // Parse options to add custom styling
-  const options: HTMLReactParserOptions = {
-    replace: (domNode) => {
-      if (domNode instanceof Element) {
-        const { name, attribs } = domNode;
 
-        // Add responsive image classes
-        if (name === 'img') {
-          return (
-            <img
-              {...attribs}
-              className="w-full h-auto rounded-xl shadow-lg my-6 max-w-full"
-              loading="lazy"
-            />
-          );
-        }
-
-        // Style headings with Times New Roman
-        if (name === 'h1') {
-          return (
-            <h1 className="text-3xl font-bold mb-6 mt-8 text-foreground font-times leading-tight" />
-          );
-        }
-
-        if (name === 'h2') {
-          return (
-            <h2 className="text-2xl font-bold mb-4 mt-6 text-foreground font-times leading-tight" />
-          );
-        }
-
-        if (name === 'h3') {
-          return (
-            <h3 className="text-xl font-bold mb-3 mt-5 text-foreground font-times leading-tight" />
-          );
-        }
-
-        // Style paragraphs
-        if (name === 'p') {
-          return (
-            <p className="mb-4 leading-relaxed text-foreground font-times text-lg" />
-          );
-        }
-
-        // Style blockquotes
-        if (name === 'blockquote') {
-          return (
-            <blockquote className="border-l-4 border-primary pl-6 my-6 italic text-muted-foreground font-times text-lg" />
-          );
-        }
-
-        // Style links
-        if (name === 'a') {
-          return (
-            <a
-              {...attribs}
-              className="text-primary hover:text-primary/80 underline font-times"
-              target={attribs?.target || '_blank'}
-              rel={attribs?.rel || 'noopener noreferrer'}
-            />
-          );
-        }
-
-        // Style lists
-        if (name === 'ul') {
-          return (
-            <ul className="list-disc pl-6 mb-4 space-y-2 font-times text-lg" />
-          );
-        }
-
-        if (name === 'ol') {
-          return (
-            <ol className="list-decimal pl-6 mb-4 space-y-2 font-times text-lg" />
-          );
-        }
-
-        if (name === 'li') {
-          return (
-            <li className="leading-relaxed font-times" />
-          );
-        }
-
-        // Style strong/bold text
-        if (name === 'strong' || name === 'b') {
-          return (
-            <strong className="font-bold font-times" />
-          );
-        }
-
-        // Style emphasis/italic text
-        if (name === 'em' || name === 'i') {
-          return (
-            <em className="italic font-times" />
-          );
-        }
-      }
-    }
-  };
+  // Simplified parse options - no custom replacement for now
+  const options: HTMLReactParserOptions = {};
 
   // Parse the clean HTML with our custom options
   const parsedContent = parse(cleanHtml, options);
 
+
   return (
     <div className={cn(
-      "prose prose-lg max-w-none dark:prose-invert font-times text-foreground",
-      "prose-headings:font-times prose-headings:font-bold",
-      "prose-p:font-times prose-p:text-lg prose-p:leading-relaxed",
-      "prose-img:rounded-xl prose-img:shadow-lg prose-img:my-6",
-      "prose-a:text-primary prose-a:font-times",
-      "prose-blockquote:font-times prose-blockquote:italic",
-      "prose-strong:font-times prose-em:font-times",
-      "prose-ul:font-times prose-ol:font-times prose-li:font-times",
+      "prose prose-lg max-w-none text-gray-900 dark:text-gray-100",
+      "[&_p]:mb-4 [&_p]:leading-relaxed [&_p]:text-lg",
+      "[&_strong]:font-bold",
+      "[&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4",
+      "[&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-8",
+      "[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-6",
+      "[&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-4",
       className
     )}>
       {parsedContent}

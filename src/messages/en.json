@@ -65,6 +65,7 @@
     "error": "Something went wrong",
     "tryAgain": "Try Again",
     "noResults": "No results found",
-    "comingSoon": "Coming Soon"
+    "comingSoon": "Coming Soon",
+    "back": "Back"
   }
 }

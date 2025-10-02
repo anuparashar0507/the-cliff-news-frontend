@@ -1,129 +1,213 @@
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Eye, Heart, Share2, Calendar } from 'lucide-react';
+'use client';
 
-interface HighlightItem {
-  id: string;
-  title: string;
-  image: string;
-  category: string;
-  publishedAt: string;
-  viewCount: number;
-  likeCount: number;
-  shareCount: number;
-  aspectRatio?: 'square' | 'portrait' | 'landscape' | 'wide';
-  isBreaking?: boolean;
-}
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Images } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import MasonryImageGrid from '@/components/MasonryImageGrid';
+import type { ImageItem } from '@/components/MasonryImageGrid';
 
 interface MasonryHighlightsProps {
-  highlights: HighlightItem[];
-  onHighlightClick?: (highlight: HighlightItem) => void;
+  className?: string;
 }
 
-const MasonryHighlights: React.FC<MasonryHighlightsProps> = ({ 
-  highlights, 
-  onHighlightClick 
-}) => {
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
+const MasonryHighlights: React.FC<MasonryHighlightsProps> = ({ className = '' }) => {
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const locale = params.locale as string || 'en';
+  const page = parseInt(searchParams.get('page') || '1');
+
+  const [highlights, setHighlights] = useState<ImageItem[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 1
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHighlights = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/highlights?page=${page}&limit=20`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch highlights');
+        }
+
+        const data = await response.json();
+
+        // Transform API data to ImageItem format
+        const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: any) => ({
+          id: highlight.id,
+          title: highlight.title,
+          imageUrl: highlight.imageUrl,
+          caption: highlight.caption,
+          category: highlight.category,
+          date: highlight.date || highlight.createdAt,
+          allowDownload: highlight.allowDownload !== false,
+          allowSharing: highlight.allowSharing !== false,
+          viewCount: highlight.viewCount || 0,
+          downloadCount: highlight.downloadCount || 0,
+          shareCount: highlight.shareCount || 0,
+        }));
+
+        setHighlights(transformedHighlights);
+        setPagination(data.pagination || {
+          page: 1,
+          limit: 20,
+          total: transformedHighlights.length,
+          pages: 1
+        });
+      } catch (error) {
+        console.error('Error fetching highlights:', error);
+        setError('Failed to load highlights');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHighlights();
+  }, [page]);
+
+  const handlePageChange = (newPage: number) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', newPage.toString());
+    router.push(url.pathname + url.search);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return "Just now";
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 48) return "Yesterday";
-    return date.toLocaleDateString();
-  };
+  if (isLoading) {
+    return (
+      <div className={`container mx-auto px-4 ${className}`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-xl">
+              <div className="aspect-[3/4] rounded-xl"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  const getImageHeight = (aspectRatio?: string) => {
-    switch (aspectRatio) {
-      case 'portrait': return 'h-80';
-      case 'square': return 'h-64';
-      case 'landscape': return 'h-48';
-      case 'wide': return 'h-40';
-      default: return 'h-60';
-    }
-  };
-
-  const getCardSpan = (aspectRatio?: string, index?: number) => {
-    if (aspectRatio === 'wide') return 'md:col-span-2';
-    if (aspectRatio === 'portrait') return 'md:row-span-2';
-    if (index === 0 || index === 4 || index === 9) return 'md:col-span-2 md:row-span-2';
-    return '';
-  };
+  if (error) {
+    return (
+      <div className={`container mx-auto px-4 text-center py-12 ${className}`}>
+        <div className="p-4 bg-muted/30 rounded-lg inline-block mb-4">
+          <Images className="h-12 w-12 text-muted-foreground mx-auto" />
+        </div>
+        <h2 className="text-2xl font-semibold mb-4">Error loading highlights</h2>
+        <p className="text-muted-foreground mb-6">{error}</p>
+        <Button onClick={() => window.location.reload()}>
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-auto">
-      {highlights.map((highlight, index) => (
-        <Card
-          key={highlight.id}
-          className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer break-inside-avoid ${getCardSpan(highlight.aspectRatio, index)}`}
-          onClick={() => onHighlightClick?.(highlight)}
-        >
-          <div className="relative">
-            <img
-              src={highlight.image}
-              alt={highlight.title}
-              className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${getImageHeight(highlight.aspectRatio)}`}
-            />
-            
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Breaking News Badge */}
-            {highlight.isBreaking && (
-              <div className="absolute top-3 left-3">
-                <Badge variant="destructive" className="animate-pulse bg-primary text-primary-foreground">
-                  🔥 Breaking
-                </Badge>
+    <div className={`container mx-auto px-4 ${className}`}>
+      {highlights.length > 0 ? (
+        <>
+          {/* Back Button */}
+          <div className="mb-8">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(`/${locale}`)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Button>
+          </div>
+
+          {/* Page Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Images className="h-8 w-8 text-primary" />
               </div>
-            )}
-
-            {/* Category Badge */}
-            <div className="absolute top-3 right-3">
-              <Badge variant="secondary" className="bg-background/80 text-foreground">
-                {highlight.category}
-              </Badge>
-            </div>
-
-            {/* Stats Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-              <h3 className="font-bold text-lg mb-2 line-clamp-2">
-                {highlight.title}
-              </h3>
-              
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>{formatDate(highlight.publishedAt)}</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    <span>{formatNumber(highlight.viewCount)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-3 w-3" />
-                    <span>{formatNumber(highlight.likeCount)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Share2 className="h-3 w-3" />
-                    <span>{formatNumber(highlight.shareCount)}</span>
-                  </div>
-                </div>
+              <div>
+                <h1 className="text-4xl font-bold mb-2">News Highlights</h1>
+                <p className="text-muted-foreground">
+                  Visual highlights from The Cliff News - {highlights.length} images
+                </p>
               </div>
             </div>
           </div>
-        </Card>
-      ))}
+
+          {/* Masonry Grid */}
+          <MasonryImageGrid
+            images={highlights}
+            columns={4}
+            className="mb-12"
+            showMetadata={true}
+          />
+
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div className="flex justify-center items-center space-x-2">
+              {/* Previous Page */}
+              {pagination.page > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                >
+                  Previous
+                </Button>
+              )}
+
+              {/* Page Numbers */}
+              {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                const pageNum = Math.max(1, pagination.page - 2) + i;
+                if (pageNum > pagination.pages) return null;
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pageNum === pagination.page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+
+              {/* Next Page */}
+              {pagination.page < pagination.pages && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                >
+                  Next
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-12">
+          <div className="p-4 bg-muted/30 rounded-lg inline-block mb-4">
+            <Images className="h-12 w-12 text-muted-foreground mx-auto" />
+          </div>
+          <h2 className="text-2xl font-semibold mb-4">No highlights found</h2>
+          <p className="text-muted-foreground mb-6">
+            There are no highlights available at the moment.
+          </p>
+          <Button onClick={() => router.push(`/${locale}`)}>
+            Browse Latest News
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

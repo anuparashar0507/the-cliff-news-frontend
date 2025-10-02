@@ -3,24 +3,42 @@ import { Article } from '@/services/articles';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-// Simple fetch with error handling
-async function fetchAPI<T>(endpoint: string): Promise<T | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
-      next: { revalidate: 60 }, // Cache for 60 seconds
-    });
+// Simple fetch with error handling and rate limiting
+async function fetchAPI<T>(endpoint: string, retries = 3): Promise<T | null> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+        next: { revalidate: 300 }, // Cache for 5 minutes to reduce API calls
+        headers: {
+          'Cache-Control': 'max-age=300',
+        },
+      });
 
-    if (!response.ok) {
-      console.error(`API Error: ${response.status} ${response.statusText}`);
-      return null;
+      if (response.status === 429) {
+        // Rate limit hit, wait before retrying
+        const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff
+        console.warn(`Rate limit hit, retrying in ${waitTime}ms (attempt ${attempt}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+
+      if (!response.ok) {
+        console.error(`API Error: ${response.status} ${response.statusText} for ${endpoint}`);
+        return null;
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Fetch error (attempt ${attempt}/${retries}):`, error);
+      if (attempt === retries) {
+        return null;
+      }
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Fetch error:', error);
-    return null;
   }
+  return null;
 }
 
 // Server-side data fetchers (for SEO)
@@ -28,28 +46,62 @@ export async function getArticles(limit = 10, language?: 'ENGLISH' | 'HINDI') {
   const params = new URLSearchParams();
   params.set('limit', limit.toString());
   if (language) params.set('language', language);
-  return await fetchAPI<{ articles: Article[] }>(`/articles?${params.toString()}`);
+
+  const result = await fetchAPI<{ articles: Article[] }>(`/articles?${params.toString()}`);
+
+  // Return fallback data if API fails
+  if (!result) {
+    return {
+      articles: []
+    };
+  }
+
+  return result;
 }
 
 export async function getTopStories(limit = 4, language?: 'ENGLISH' | 'HINDI') {
   const params = new URLSearchParams();
   params.set('limit', limit.toString());
   if (language) params.set('language', language);
-  return await fetchAPI<{ topStories: Article[] }>(`/articles/top-stories?${params.toString()}`);
+
+  const result = await fetchAPI<{ topStories: Article[] }>(`/articles/top-stories?${params.toString()}`);
+
+  // Return fallback data if API fails
+  if (!result) {
+    return {
+      topStories: []
+    };
+  }
+
+  return result;
 }
 
 export async function getBreakingNews(limit = 3, language?: 'ENGLISH' | 'HINDI') {
   const params = new URLSearchParams();
   params.set('limit', limit.toString());
   if (language) params.set('language', language);
-  return await fetchAPI<{ breakingNews: Article[] }>(`/articles/breaking?${params.toString()}`);
+
+  const result = await fetchAPI<{ breakingNews: Article[] }>(`/articles/breaking?${params.toString()}`);
+
+  if (!result) {
+    return { breakingNews: [] };
+  }
+
+  return result;
 }
 
 export async function getQuickReads(limit = 5, language?: 'ENGLISH' | 'HINDI') {
   const params = new URLSearchParams();
   params.set('limit', limit.toString());
   if (language) params.set('language', language);
-  return await fetchAPI<{ quickReads: any[] }>(`/articles/quick-reads?${params.toString()}`);
+
+  const result = await fetchAPI<{ quickReads: any[] }>(`/articles/quick-reads?${params.toString()}`);
+
+  if (!result) {
+    return { quickReads: [] };
+  }
+
+  return result;
 }
 
 export async function getHighlights(limit = 6) {
@@ -62,4 +114,31 @@ export async function getArticleBySlug(slug: string) {
 
 export async function getYouTubeShorts(limit = 10) {
   return await fetchAPI<{ shorts: any[] }>(`/youtube/shorts?limit=${limit}`);
+}
+
+export async function getNit(limit = 6) {
+  return await fetchAPI<{ nits: any[] }>(`/nit?limit=${limit}`);
+}
+
+export async function getNewsByCategory(
+  categorySlug: string,
+  page = 1,
+  limit = 12,
+  language?: 'ENGLISH' | 'HINDI'
+) {
+  const params = new URLSearchParams();
+  params.set('page', page.toString());
+  params.set('limit', limit.toString());
+  if (language) params.set('language', language);
+
+  return await fetchAPI<{
+    articles: Article[];
+    totalPages: number;
+    currentPage: number;
+    totalCount: number;
+  }>(`/articles/category/${categorySlug}?${params.toString()}`);
+}
+
+export async function getCategories() {
+  return await fetchAPI<{ categories: any[] }>('/categories?active=true');
 }
