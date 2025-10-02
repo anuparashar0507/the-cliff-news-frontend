@@ -152,19 +152,22 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
       // Control YouTube mute through postMessage API
       try {
         const iframe = youtubePlayerRef.current;
-        const message = isMuted
+
+        // Primary method: Use YouTube iframe API commands
+        const muteMessage = isMuted
           ? '{"event":"command","func":"mute","args":""}'
           : '{"event":"command","func":"unMute","args":""}';
 
-        iframe.contentWindow?.postMessage(message, '*');
+        iframe.contentWindow?.postMessage(muteMessage, '*');
 
-        // Backup method: Send volume commands
+        // Backup method: Set volume to 0 or 100
         setTimeout(() => {
           const volumeMessage = isMuted
             ? '{"event":"command","func":"setVolume","args":"0"}'
             : '{"event":"command","func":"setVolume","args":"100"}';
           iframe.contentWindow?.postMessage(volumeMessage, '*');
-        }, 100);
+        }, 200);
+
       } catch (error) {
         console.debug('YouTube mute control error:', error);
       }
@@ -302,7 +305,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
 
             return (
               <iframe
-                key={`${videoId}-${isActive}-${isPlaying}`} // Remove isMuted from key to prevent recreation
+                key={`${videoId}-${isActive}-${isPlaying}`} // Clean key without force reload
                 ref={(el) => {
                   (videoRef as React.MutableRefObject<HTMLIFrameElement | null>).current = el;
                   youtubePlayerRef.current = el;
@@ -367,27 +370,31 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
           </div>
         )}
 
-        {/* Click overlay for YouTube videos */}
+        {/* Click overlay for YouTube videos - exclude top control area */}
         {isYouTubeVideo && (
           <div
             className="absolute inset-0 z-10 cursor-pointer"
+            style={{ top: '60px' }} // Start below the top controls
             onClick={handleVideoClick}
           />
         )}
 
         {/* Content overlays - positioned relative to video container */}
-        <div className="absolute inset-0 flex flex-col justify-between p-4 text-white">
+        <div className="absolute inset-0 flex flex-col justify-between p-4 text-white z-20">
           {/* Top controls */}
           <div className="flex justify-between items-start">
             <div className="bg-primary px-3 py-1 rounded-full text-xs font-semibold">
               {video.category}
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 relative z-30">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onToggleMute}
-                className="bg-black/30 text-white hover:bg-black/50"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent video click handler
+                  onToggleMute();
+                }}
+                className="bg-black/30 text-white hover:bg-black/50 relative z-30"
               >
                 {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
               </Button>
@@ -422,12 +429,15 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between relative z-30">
               <div className="flex items-center space-x-4">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsLiked(!isLiked)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLiked(!isLiked);
+                  }}
                   className="flex items-center space-x-1 text-white hover:bg-white/20"
                 >
                   <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -437,6 +447,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={(e) => e.stopPropagation()}
                   className="flex items-center space-x-1 text-white hover:bg-white/20"
                 >
                   <MessageCircle className="h-5 w-5" />
@@ -446,6 +457,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={(e) => e.stopPropagation()}
                   className="flex items-center space-x-1 text-white hover:bg-white/20"
                 >
                   <Share className="h-5 w-5" />
@@ -456,7 +468,10 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onNavigateHome}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigateHome?.();
+                }}
                 className="text-white hover:bg-white/20"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
