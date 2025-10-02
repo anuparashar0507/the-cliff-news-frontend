@@ -18,6 +18,7 @@ import {
   getYouTubeShorts,
   getNit,
 } from "@/lib/api";
+import { Article } from "@/services/articles";
 
 const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
   // Convert locale to backend language format
@@ -28,18 +29,24 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
   const topStoriesData = await getTopStories(4, language);
 
   // Then fetch less critical data with error fallbacks
-  const [quickReadsData, breakingNewsData, highlightsData, nitData, videoBytesData] = await Promise.allSettled([
+  const settledResults = await Promise.allSettled([
     getQuickReads(5, language),
     getBreakingNews(3, language),
     getHighlights(5),
     getNit(5),
     getYouTubeShorts(10)
-  ]).then(results => results.map(result => result.status === 'fulfilled' ? result.value : null));
+  ]);
+
+  const quickReadsData = settledResults[0].status === 'fulfilled' ? settledResults[0].value : null;
+  const breakingNewsData = settledResults[1].status === 'fulfilled' ? settledResults[1].value : null;
+  const highlightsData = settledResults[2].status === 'fulfilled' ? settledResults[2].value : null;
+  const nitData = settledResults[3].status === 'fulfilled' ? settledResults[3].value : null;
+  const videoBytesData = settledResults[4].status === 'fulfilled' ? settledResults[4].value : null;
 
   console.log('Current locale:', locale, 'Language:', language);
 
   // Filter articles by category for hero section
-  const articles = (articlesData?.articles as any[]) || [];
+  const articles: Article[] = articlesData?.articles || [];
 
 
   return (
@@ -67,7 +74,7 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
 
           {/* Enhanced Top Stories Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
-            {((topStoriesData?.topStories as any[]) || []).map((article, index) => (
+            {(topStoriesData?.topStories || []).map((article, index) => (
               <div key={article.id} className={`${index < 2 ? 'xl:col-span-2' : ''}`}>
                 <NewsCard article={article} variant="featured" />
               </div>
@@ -89,7 +96,7 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {((breakingNewsData?.articles as any[]) || []).slice(0, 3).map((article) => (
+              {(breakingNewsData?.articles || []).slice(0, 3).map((article: Article) => (
                 <div key={article.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <h3 className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
                     {article.title}
@@ -118,17 +125,17 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
 
       {/* Video Bytes Section */}
       <HorizontalVideoScroll
-        videos={(videoBytesData as any)?.shorts || []}
+        videos={videoBytesData?.shorts || []}
         title="Video Bytes"
         subtitle="News in motion - quick video updates"
       />
 
       {/* News Highlights Section */}
-      {(highlightsData as any)?.highlights && (highlightsData as any).highlights.length > 0 && (
+      {highlightsData?.highlights && highlightsData.highlights.length > 0 && (
         <HomepageImageGrid
           title="News Highlights"
           subtitle="Visual highlights and important stories from The Cliff News"
-          items={(highlightsData as any).highlights}
+          items={highlightsData.highlights}
           type="highlights"
           locale={locale}
           icon={<Images className="h-8 w-8 text-orange-500" />}
@@ -138,11 +145,11 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
       )}
 
       {/* Notice Inviting Tenders (NIT) Section */}
-      {(nitData as any)?.nits && (nitData as any).nits.length > 0 && (
+      {nitData?.nits && nitData.nits.length > 0 && (
         <HomepageImageGrid
           title="Notice Inviting Tenders (NIT)"
           subtitle="Official tender notices and procurement announcements"
-          items={(nitData as any).nits}
+          items={nitData.nits}
           type="nit"
           locale={locale}
           icon={<Clock className="h-8 w-8 text-blue-500" />}

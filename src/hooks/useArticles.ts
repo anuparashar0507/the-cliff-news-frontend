@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { articlesApi, Article, ArticleFilters, CreateArticleData, UpdateArticleData } from '../services';
+import { articlesApi, Article, ArticleFilters, CreateArticleData, UpdateArticleData, NIT, NITFilters, mockNITs } from '../services';
 
 // Mock data for development
 const mockArticles: Article[] = [
@@ -431,6 +431,65 @@ export const useTopStories = (limit?: number) => {
 
         fetchTopStories();
     }, [limit]);
+
+    return { data, isLoading, error };
+};
+
+export const useNIT = (filters?: NITFilters) => {
+    const [data, setData] = useState<{ nits: NIT[] } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        const fetchNITs = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Filter mock data based on filters
+                let filteredNITs = [...mockNITs];
+
+                if (filters?.category) {
+                    filteredNITs = filteredNITs.filter(nit =>
+                        nit.category.toLowerCase() === filters.category?.toLowerCase()
+                    );
+                }
+
+                if (filters?.department) {
+                    filteredNITs = filteredNITs.filter(nit =>
+                        nit.department.toLowerCase().includes(filters.department?.toLowerCase() || '')
+                    );
+                }
+
+                if (filters?.status) {
+                    filteredNITs = filteredNITs.filter(nit => nit.status === filters.status);
+                }
+
+                if (filters?.search) {
+                    const searchTerm = filters.search.toLowerCase();
+                    filteredNITs = filteredNITs.filter(nit =>
+                        nit.title.toLowerCase().includes(searchTerm) ||
+                        nit.description.toLowerCase().includes(searchTerm) ||
+                        nit.department.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                const limit = filters?.limit || filteredNITs.length;
+                const limitedNITs = filteredNITs.slice(0, limit);
+
+                setData({ nits: limitedNITs });
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Unknown error'));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchNITs();
+    }, [filters?.category, filters?.department, filters?.status, filters?.search, filters?.limit]);
 
     return { data, isLoading, error };
 };

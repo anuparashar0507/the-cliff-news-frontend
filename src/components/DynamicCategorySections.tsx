@@ -1,6 +1,13 @@
 import { getCategories, getNewsByCategory } from '@/lib/api';
 import EnhancedCategorySection from './EnhancedCategorySection';
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+
 interface DynamicCategorySectionsProps {
   language: 'ENGLISH' | 'HINDI';
   excludeCategories?: string[];
@@ -21,7 +28,7 @@ const DynamicCategorySections = async ({
 
   // Fetch articles for each category in parallel
   const categoryArticles = await Promise.all(
-    filteredCategories.map(async (category: any) => {
+    filteredCategories.map(async (category: Category) => {
       const articlesData = await getNewsByCategory(category.slug, 1, 6, language);
       return {
         category,

@@ -35,6 +35,25 @@ interface VideoData {
   };
 }
 
+interface YouTubeShortResponse {
+  id?: string;
+  title?: string;
+  description?: string;
+  youtubeUrl?: string;
+  videoUrl?: string;
+  thumbnail?: string;
+  duration?: string;
+  viewCount?: number;
+  views?: number;
+  likeCount?: number;
+  likes?: number;
+  category?: {
+    name?: string;
+  };
+  publishedAt?: string;
+  channelName?: string;
+}
+
 interface VideoCardProps {
   video: VideoData;
   isActive: boolean;
@@ -232,7 +251,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
             return (
               <iframe
                 key={`${videoId}-${isActive}-${isPlaying}-${isMuted}`} // Force recreation when state changes
-                ref={videoRef as any}
+                ref={videoRef as React.RefObject<HTMLIFrameElement>}
                 src={embedUrl}
                 className="w-full h-full"
                 frameBorder="0"
@@ -453,7 +472,7 @@ const InfiniteVideoScroll = ({
 
         if (response?.shorts) {
           // Map YouTube API data to VideoData format
-          const mappedVideos: VideoData[] = response.shorts.map((short: any) => ({
+          const mappedVideos: VideoData[] = response.shorts.map((short: YouTubeShortResponse) => ({
             id: short.id || Math.random().toString(),
             title: short.title || 'Untitled Video',
             description: short.description || '',
@@ -495,7 +514,7 @@ const InfiniteVideoScroll = ({
 
       if (response?.shorts) {
         // Map new YouTube API data to VideoData format
-        const newMappedVideos: VideoData[] = response.shorts.map((short: any) => ({
+        const newMappedVideos: VideoData[] = response.shorts.map((short: YouTubeShortResponse) => ({
           id: short.id || Math.random().toString(),
           title: short.title || 'Untitled Video',
           description: short.description || '',

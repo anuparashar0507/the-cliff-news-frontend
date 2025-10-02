@@ -1,5 +1,37 @@
 // Simple server-side API fetcher for Next.js
 import { Article } from '@/services/articles';
+import { NIT } from '@/services/nit';
+
+interface QuickRead {
+  id: string;
+  title: string;
+  excerpt: string;
+  readTime: number;
+  publishedAt: string;
+}
+
+interface Highlight {
+  id: string;
+  title: string;
+  image: string;
+  link: string;
+}
+
+interface YouTubeShort {
+  id: string;
+  title: string;
+  videoId: string;
+  thumbnail: string;
+  duration: string;
+  views: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -95,7 +127,7 @@ export async function getQuickReads(limit = 5, language?: 'ENGLISH' | 'HINDI') {
   params.set('limit', limit.toString());
   if (language) params.set('language', language);
 
-  const result = await fetchAPI<{ quickReads: any[] }>(`/articles/quick-reads?${params.toString()}`);
+  const result = await fetchAPI<{ quickReads: QuickRead[] }>(`/articles/quick-reads?${params.toString()}`);
 
   if (!result) {
     return { quickReads: [] };
@@ -105,7 +137,7 @@ export async function getQuickReads(limit = 5, language?: 'ENGLISH' | 'HINDI') {
 }
 
 export async function getHighlights(limit = 6) {
-  return await fetchAPI<{ highlights: any[] }>(`/highlights?limit=${limit}`);
+  return await fetchAPI<{ highlights: Highlight[] }>(`/highlights?limit=${limit}`);
 }
 
 export async function getArticleBySlug(slug: string) {
@@ -113,11 +145,11 @@ export async function getArticleBySlug(slug: string) {
 }
 
 export async function getYouTubeShorts(limit = 10) {
-  return await fetchAPI<{ shorts: any[] }>(`/youtube/shorts?limit=${limit}`);
+  return await fetchAPI<{ shorts: YouTubeShort[] }>(`/youtube/shorts?limit=${limit}`);
 }
 
 export async function getNit(limit = 6) {
-  return await fetchAPI<{ nits: any[] }>(`/nit?limit=${limit}`);
+  return await fetchAPI<{ nits: NIT[] }>(`/nit?limit=${limit}`);
 }
 
 export async function getNewsByCategory(
@@ -140,5 +172,5 @@ export async function getNewsByCategory(
 }
 
 export async function getCategories() {
-  return await fetchAPI<{ categories: any[] }>('/categories?active=true');
+  return await fetchAPI<{ categories: Category[] }>('/categories?active=true');
 }

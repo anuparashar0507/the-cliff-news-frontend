@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button';
 import MasonryImageGrid from '@/components/MasonryImageGrid';
 import type { ImageItem } from '@/components/MasonryImageGrid';
 
+interface HighlightData {
+  id: string;
+  title: string;
+  image: string;
+  link: string;
+}
+
 const HighlightsClient = () => {
   const params = useParams();
   const router = useRouter();
@@ -39,7 +46,7 @@ const HighlightsClient = () => {
         const data = await response.json();
 
         // Transform API data to ImageItem format
-        const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: any) => ({
+        const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: HighlightData) => ({
           id: highlight.id,
           title: highlight.title,
           imageUrl: highlight.imageUrl,

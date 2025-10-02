@@ -114,7 +114,7 @@ const StreamlinedEPaperSection: React.FC<StreamlinedEPaperSectionProps> = ({
           <div className="flex items-center justify-center mb-4">
             <Calendar className="h-8 w-8 text-blue-600 mr-3" />
             <h2 className="text-3xl font-bold text-foreground">
-              Today's Digital E-Paper
+              Today&apos;s Digital E-Paper
             </h2>
           </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -154,7 +154,7 @@ const StreamlinedEPaperSection: React.FC<StreamlinedEPaperSectionProps> = ({
         {/* Featured Today's Editions */}
         <div className="mb-12">
           <h3 className="text-xl font-semibold text-foreground mb-6 text-center">
-            📰 Today's Edition
+            📰 Today&apos;s Edition
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {displayedEditions

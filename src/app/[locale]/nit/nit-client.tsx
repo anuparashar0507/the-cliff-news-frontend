@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import MasonryImageGrid from '@/components/MasonryImageGrid';
 import type { ImageItem } from '@/components/MasonryImageGrid';
+import { NIT } from '@/services/nit';
 
 const NITClient = () => {
   const params = useParams();
@@ -39,7 +40,7 @@ const NITClient = () => {
         const data = await response.json();
 
         // Transform API data to ImageItem format
-        const transformedNITs: ImageItem[] = (data.nits || []).map((nit: any) => ({
+        const transformedNITs: ImageItem[] = (data.nits || []).map((nit: NIT) => ({
           id: nit.id,
           title: nit.title,
           imageUrl: nit.imageUrl,

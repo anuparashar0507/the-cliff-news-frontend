@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { ArticleSkeleton } from '@/components/skeletons/CardSkeleton';
 import { Button } from '@/components/ui/button';
 import { SafeHtmlRenderer } from '@/components/SafeHtmlRenderer';
+import { Article } from '@/services/articles';
 
 interface ArticleContentProps {
   slug: string;
@@ -26,7 +27,7 @@ export default function ArticleContent({
 }: ArticleContentProps) {
   const t = useTranslations();
   const router = useRouter();
-  const [article, setArticle] = useState<any>(null);
+  const [article, setArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
