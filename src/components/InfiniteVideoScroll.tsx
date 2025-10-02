@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
-import { motion, PanInfo, useAnimation } from "framer-motion";
+import { motion, PanInfo } from "framer-motion";
 import {
   Play,
-  Pause,
   Volume2,
   VolumeX,
   Share,
@@ -35,24 +34,6 @@ interface VideoData {
   };
 }
 
-interface YouTubeShortResponse {
-  id?: string;
-  title?: string;
-  description?: string;
-  youtubeUrl?: string;
-  videoUrl?: string;
-  thumbnail?: string;
-  duration?: string;
-  viewCount?: number;
-  views?: number;
-  likeCount?: number;
-  likes?: number;
-  category?: {
-    name?: string;
-  };
-  publishedAt?: string;
-  channelName?: string;
-}
 
 interface VideoCardProps {
   video: VideoData;
@@ -70,7 +51,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
   const videoRef = useRef<HTMLVideoElement | HTMLIFrameElement>(null);
   const playPromiseRef = useRef<Promise<void> | null>(null);
   const [isYouTubeVideo, setIsYouTubeVideo] = useState(false);
-  const youtubePlayerRef = useRef<any>(null);
+  const youtubePlayerRef = useRef<HTMLIFrameElement | null>(null);
 
   // Check if this is a YouTube video
   useEffect(() => {
@@ -101,7 +82,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
           if (playPromiseRef.current) {
             try {
               await playPromiseRef.current;
-            } catch (error) {
+            } catch {
               // Ignore previous play errors
             }
             playPromiseRef.current = null;
@@ -125,7 +106,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
         if (playPromiseRef.current) {
           try {
             await playPromiseRef.current;
-          } catch (error) {
+          } catch {
             // Ignore play errors before pausing
           }
           playPromiseRef.current = null;
@@ -226,7 +207,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
           if (playPromiseRef.current) {
             try {
               await playPromiseRef.current;
-            } catch (error) {
+            } catch {
               // Ignore previous errors
             }
             playPromiseRef.current = null;
@@ -370,13 +351,32 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
           </div>
         )}
 
-        {/* Click overlay for YouTube videos - exclude top control area */}
+        {/* Click overlay for YouTube videos - multiple areas to avoid mute button */}
         {isYouTubeVideo && (
-          <div
-            className="absolute inset-0 z-10 cursor-pointer"
-            style={{ top: '60px' }} // Start below the top controls
-            onClick={handleVideoClick}
-          />
+          <>
+            {/* Main click area - covers most of the video */}
+            <div
+              className="absolute inset-0 z-10 cursor-pointer"
+              style={{
+                top: '0px',
+                right: '80px', // Exclude right area where mute button is
+                bottom: '0px',
+                left: '0px'
+              }}
+              onClick={handleVideoClick}
+            />
+            {/* Top-right area below mute button */}
+            <div
+              className="absolute z-10 cursor-pointer"
+              style={{
+                top: '60px', // Start below mute button
+                right: '0px',
+                bottom: '0px',
+                width: '80px'
+              }}
+              onClick={handleVideoClick}
+            />
+          </>
         )}
 
         {/* Content overlays - positioned relative to video container */}
@@ -501,22 +501,17 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
 };
 
 interface InfiniteVideoScrollProps {
-  isDesktop?: boolean;
   onNavigateHome?: () => void;
-  currentLocale?: string;
 }
 
 const InfiniteVideoScroll = ({
-  isDesktop = false,
-  onNavigateHome,
-  currentLocale = 'en'
+  onNavigateHome
 }: InfiniteVideoScrollProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [windowHeight, setWindowHeight] = useState(800); // Default fallback
   const containerRef = useRef<HTMLDivElement>(null);
-  const controls = useAnimation();
 
   // Set window height on client side
   useLayoutEffect(() => {

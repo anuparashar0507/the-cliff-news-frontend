@@ -7,7 +7,12 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import '../globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+  display: 'swap',
+  adjustFontFallback: false
+});
 
 const locales = ['en', 'hi'];
 

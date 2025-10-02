@@ -58,7 +58,7 @@ const VideoSection = ({
         const shorts = data?.shorts || [];
 
         // Transform the data to match the expected format
-        const transformedVideos: YouTubeVideoData[] = shorts.map((short: any) => ({
+        const transformedVideos: YouTubeVideoData[] = shorts.map((short: YouTubeShort) => ({
           id: short.id,
           title: short.title,
           description: short.description || short.title, // Use actual description from API

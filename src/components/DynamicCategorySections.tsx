@@ -81,7 +81,7 @@ const DynamicCategorySections = ({
             category,
             articles: (articlesByCategory.get(category.slug) || []).slice(0, 6)
           }))
-          .filter(({ articles }) => articles.length > 0);
+          .filter(({ articles }: { articles: Article[] }) => articles.length > 0);
 
         console.log(`Loaded ${categoriesWithValidArticles.length} categories with articles`);
         setCategoriesWithArticles(categoriesWithValidArticles);

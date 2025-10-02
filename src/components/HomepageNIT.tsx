@@ -30,28 +30,28 @@ const HomepageNIT = ({ locale }: HomepageNITProps) => {
         const rawNits = data?.nits || [];
 
         // Transform API response to match HomepageImageGrid expected NIT format
-        const transformedNits: NIT[] = rawNits.map((nit: any) => ({
-          id: nit.id,
-          title: nit.title,
-          description: nit.description || nit.title,
-          department: nit.department || '',
-          tenderNumber: nit.tenderNumber || '',
-          publishedDate: nit.publishedDate || nit.date || nit.createdAt,
-          lastDate: nit.lastDate || '',
-          value: nit.value || '',
-          status: nit.status || 'active',
-          category: nit.category || '',
-          downloadUrl: nit.downloadUrl || '',
-          contactInfo: nit.contactInfo || {
+        const transformedNits: NIT[] = rawNits.map((nit: Record<string, unknown>) => ({
+          id: nit.id as string,
+          title: nit.title as string,
+          description: (nit.description || nit.title) as string,
+          department: (nit.department || '') as string,
+          tenderNumber: (nit.tenderNumber || '') as string,
+          publishedDate: (nit.publishedDate || nit.date || nit.createdAt) as string,
+          lastDate: (nit.lastDate || '') as string,
+          value: (nit.value || '') as string,
+          status: (nit.status || 'active') as string,
+          category: (nit.category || '') as string,
+          downloadUrl: (nit.downloadUrl || '') as string,
+          contactInfo: (nit.contactInfo || {
             officer: '',
             phone: '',
             email: ''
-          },
-          location: nit.location || '',
-          imageUrl: nit.imageUrl, // Keep the imageUrl from API
-          date: nit.date || nit.createdAt,
-          createdAt: nit.createdAt,
-          updatedAt: nit.updatedAt
+          }) as { officer: string; phone: string; email: string },
+          location: (nit.location || '') as string,
+          imageUrl: nit.imageUrl as string, // Keep the imageUrl from API
+          date: (nit.date || nit.createdAt) as string,
+          createdAt: nit.createdAt as string,
+          updatedAt: nit.updatedAt as string
         }));
 
         console.log(`Loaded ${transformedNits.length} NITs for homepage`);

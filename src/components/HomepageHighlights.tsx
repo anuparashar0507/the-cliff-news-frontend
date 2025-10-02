@@ -36,10 +36,10 @@ const HomepageHighlights = ({ locale }: HomepageHighlightsProps) => {
         const rawHighlights = data?.highlights || [];
 
         // Transform API response to match HomepageImageGrid expected format
-        const transformedHighlights: HighlightItem[] = rawHighlights.map((highlight: any) => ({
-          id: highlight.id,
-          title: highlight.title,
-          image: highlight.imageUrl, // Map imageUrl to image
+        const transformedHighlights: HighlightItem[] = rawHighlights.map((highlight: Record<string, unknown>) => ({
+          id: highlight.id as string,
+          title: highlight.title as string,
+          image: highlight.imageUrl as string, // Map imageUrl to image
           link: `/${locale}/highlights/${highlight.id}` // Create a proper link
         }));
 

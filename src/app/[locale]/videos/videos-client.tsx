@@ -1,17 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import InfiniteVideoScroll from '@/components/InfiniteVideoScroll';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import InfiniteVideoScroll from "@/components/InfiniteVideoScroll";
 
 interface VideosClientProps {
   locale: string;
 }
 
 const VideosClient = ({ locale }: VideosClientProps) => {
-  const [viewMode, setViewMode] = useState<'grid' | 'shorts'>('shorts');
+  // const [viewMode, setViewMode] = useState<'grid' | 'shorts'>('shorts');
   const [isDesktop, setIsDesktop] = useState(false);
   const router = useRouter();
 
@@ -22,8 +20,8 @@ const VideosClient = ({ locale }: VideosClientProps) => {
     };
 
     checkIsDesktop();
-    window.addEventListener('resize', checkIsDesktop);
-    return () => window.removeEventListener('resize', checkIsDesktop);
+    window.addEventListener("resize", checkIsDesktop);
+    return () => window.removeEventListener("resize", checkIsDesktop);
   }, []);
 
   const handleBackToHome = () => {
@@ -40,9 +38,7 @@ const VideosClient = ({ locale }: VideosClientProps) => {
     <div className="min-h-screen bg-background">
       {/* No banner - just full-screen videos */}
       <InfiniteVideoScroll
-        isDesktop={isDesktop}
         onNavigateHome={handleBackToHome}
-        currentLocale={locale}
       />
     </div>
   );
