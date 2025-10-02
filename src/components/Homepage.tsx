@@ -5,7 +5,7 @@ import EnhancedHeroSection from "./EnhancedHeroSection";
 import NewsCard from "./NewsCard";
 import QuickReadsSection from "./QuickReadsSection";
 import DynamicCategorySections from "./DynamicCategorySections";
-import VideosBytesSection from "./VideosBytesSection";
+import HorizontalVideoScroll from "./HorizontalVideoScroll";
 import HomepageImageGrid from "./HomepageImageGrid";
 import HoroscopeSection from "./HoroscopeSection";
 import { Images, Clock } from "lucide-react";
@@ -117,7 +117,11 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
       />
 
       {/* Video Bytes Section */}
-      <VideosBytesSection videos={(videoBytesData as any)?.shorts || []} maxVideos={4} />
+      <HorizontalVideoScroll
+        videos={(videoBytesData as any)?.shorts || []}
+        title="Video Bytes"
+        subtitle="News in motion - quick video updates"
+      />
 
       {/* News Highlights Section */}
       {(highlightsData as any)?.highlights && (highlightsData as any).highlights.length > 0 && (

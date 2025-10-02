@@ -70,9 +70,9 @@ const VideosBytesSection = ({ videos, maxVideos = 4 }: VideosBytesSectionProps) 
 
         {/* Horizontal Scroll Container */}
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
+          <div className="flex gap-4 pb-4" style={{ width: 'max-content' }}>
             {displayVideos.map((video) => (
-              <div key={video.id} className="w-80 flex-shrink-0">
+              <div key={video.id} className="flex-shrink-0">
                 <VideoByteCard video={video} />
               </div>
             ))}

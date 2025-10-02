@@ -1,313 +1,272 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { useRef, useState, useEffect } from "react";
 import {
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Share,
-  Heart,
   ChevronLeft,
   ChevronRight,
-  ExternalLink
+  Play,
+  ArrowRight,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import VideoPopup from "./VideoPopup";
+import { useRouter, usePathname } from "next/navigation";
 
-interface VideoData {
+// Interface for the actual API response
+interface YouTubeVideoData {
   id: string;
   title: string;
   description: string;
   thumbnail: string;
-  videoUrl: string;
-  duration: string;
-  views?: number;
   publishedAt: string;
-  channel: {
-    name: string;
-    avatar?: string;
-  };
+  viewCount: number;
+  likeCount: number;
+  duration: string;
+  hashtags?: string[];
+  youtubeUrl: string;
+  channelName?: string;
 }
 
 interface HorizontalVideoScrollProps {
-  videos: VideoData[];
-  maxVideos?: number;
+  videos: YouTubeVideoData[];
+  title?: string;
+  subtitle?: string;
 }
 
-const HorizontalVideoScroll: React.FC<HorizontalVideoScrollProps> = ({
+const HorizontalVideoScroll = ({
   videos,
-  maxVideos = 10
-}) => {
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState<{ [key: string]: boolean }>({});
-  const [isMuted, setIsMuted] = useState<{ [key: string]: boolean }>({});
-  const [likes, setLikes] = useState<{ [key: string]: boolean }>({});
+  title = "Video Bytes",
+  subtitle = "News in motion - quick video updates",
+}: HorizontalVideoScrollProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [selectedVideo, setSelectedVideo] = useState<YouTubeVideoData | null>(
+    null
+  );
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const router = useRouter();
   const pathname = usePathname();
+
+  // Get current locale from pathname
   const currentLocale = pathname?.split('/')[1] || 'en';
 
-  // Limit videos to maxVideos
-  const displayVideos = videos.slice(0, maxVideos);
-
-  // No need for special navigation handling since we're using locale-aware routes
-
-  const togglePlay = (videoId: string) => {
-    const video = videoRefs.current[videoId];
-    const isCurrentlyPlaying = isPlaying[videoId];
-
-    if (video) {
-      if (isCurrentlyPlaying) {
-        video.pause();
-      } else {
-        video.play().catch(console.error);
-      }
-    } else {
-      // If no video element yet, just toggle state to show video
-      setIsPlaying(prev => ({ ...prev, [videoId]: !prev[videoId] }));
+  const checkScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
   };
 
-  const toggleMute = (videoId: string) => {
-    const video = videoRefs.current[videoId];
-    const newMutedState = !isMuted[videoId];
-
-    setIsMuted(prev => ({ ...prev, [videoId]: newMutedState }));
-
-    if (video) {
-      video.muted = newMutedState;
+  useEffect(() => {
+    checkScrollButtons();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", checkScrollButtons);
+      return () => container.removeEventListener("scroll", checkScrollButtons);
     }
-  };
-
-  const toggleLike = (videoId: string) => {
-    setLikes(prev => ({ ...prev, [videoId]: !prev[videoId] }));
-  };
+  }, [videos]);
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({
+        left: -320,
+        behavior: "smooth",
+      });
     }
   };
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({
+        left: 320,
+        behavior: "smooth",
+      });
     }
   };
 
-  const formatViews = (views?: number) => {
-    if (!views || views === 0) return '0';
-    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
-    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+  const formatViews = (views: number | undefined) => {
+    if (!views || views === 0) return "0";
+    if (views >= 1000000) {
+      return `${(views / 1000000).toFixed(1)}M`;
+    } else if (views >= 1000) {
+      return `${(views / 1000).toFixed(1)}K`;
+    }
     return views.toString();
   };
 
-  const formatTimeAgo = (dateString: string) => {
-    if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Unknown';
-
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  const handleVideoClick = (video: YouTubeVideoData) => {
+    setSelectedVideo(video);
+    setIsPopupOpen(true);
   };
 
-  if (!displayVideos.length) {
-    return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No video bytes available</p>
-      </div>
-    );
+  const handleClosePopup = () => {
+    setIsPopupOpen(false);
+    setSelectedVideo(null);
+  };
+
+  const formatDuration = (duration: string | number) => {
+    let seconds: number;
+    if (typeof duration === "string") {
+      // Parse ISO 8601 duration format (e.g., "PT45S" -> 45 seconds)
+      const match = duration.match(/PT(\d+)S/);
+      seconds = match ? parseInt(match[1]) : 0;
+    } else {
+      seconds = duration;
+    }
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const handleWatchAllClick = () => {
+    router.push(`/${currentLocale}/videos`);
+  };
+
+  if (videos.length === 0) {
+    return null;
   }
 
   return (
-    <div className="relative">
-      {/* Navigation Buttons */}
-      {displayVideos.length > 3 && (
-        <>
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm"
-            onClick={scrollLeft}
+    <section className="py-12 bg-muted/30">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="headline-medium text-brand-navy mb-2">{title}</h2>
+            <div className="w-12 h-1 bg-primary rounded-full"></div>
+            <p className="body-medium text-muted-foreground mt-2">{subtitle}</p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={scrollLeft}
+              disabled={!canScrollLeft}
+              className="rounded-full w-10 h-10 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={scrollRight}
+              disabled={!canScrollRight}
+              className="rounded-full w-10 h-10 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleWatchAllClick}
+              className="group"
+            >
+              Watch All Videos
+              <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div
+            ref={scrollContainerRef}
+            className="flex space-x-6 overflow-x-auto scrollbar-hide pb-4"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
           >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm"
-            onClick={scrollRight}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </>
-      )}
+            {videos.map((video) => (
+              <div
+                key={video.id}
+                className="flex-shrink-0 w-80 bg-white rounded-lg shadow-lg overflow-hidden group cursor-pointer hover:shadow-xl transition-shadow duration-300"
+                onClick={() => handleVideoClick(video)}
+              >
+                <div className="relative aspect-[9/16] overflow-hidden">
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
 
-      {/* Horizontal Scroll Container */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {displayVideos.map((video, index) => (
-          <motion.div
-            key={video.id}
-            className="flex-shrink-0 w-72 bg-card border border-border rounded-lg overflow-hidden group"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            {/* Video Thumbnail/Player */}
-            <div className="relative aspect-[9/16] bg-black cursor-pointer" onClick={() => togglePlay(video.id)}>
-              {isPlaying[video.id] && video.videoUrl ? (
-                <video
-                  ref={(el) => (videoRefs.current[video.id] = el)}
-                  className="w-full h-full object-cover"
-                  autoPlay
-                  loop
-                  muted={isMuted[video.id]}
-                  playsInline
-                  poster={video.thumbnail || '/api/placeholder/400/600'}
-                  onError={() => {
-                    console.log('Video error, falling back to thumbnail');
-                    setIsPlaying(prev => ({ ...prev, [video.id]: false }));
-                  }}
-                  onPlay={() => {
-                    setIsPlaying(prev => ({ ...prev, [video.id]: true }));
-                  }}
-                  onPause={() => {
-                    setIsPlaying(prev => ({ ...prev, [video.id]: false }));
-                  }}
-                >
-                  <source src={video.videoUrl} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              ) : (
-                <img
-                  src={video.thumbnail || '/api/placeholder/400/600'}
-                  alt={video.title}
-                  className="w-full h-full object-cover"
-                />
-              )}
+                  {/* Dark overlay for text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-              {/* Play Overlay when paused */}
-              {!isPlaying[video.id] && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-black/60 rounded-full p-3">
-                    <Play className="h-8 w-8 text-white fill-current" />
-                  </div>
-                </div>
-              )}
-
-              {/* Video Controls Overlay */}
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex items-center justify-between">
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="bg-black/50 hover:bg-black/70"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        togglePlay(video.id);
-                      }}
-                    >
-                      {isPlaying[video.id] ? (
-                        <Pause className="h-4 w-4 text-white" />
-                      ) : (
-                        <Play className="h-4 w-4 text-white" />
-                      )}
-                    </Button>
-
-                    <div className="flex gap-2">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="bg-black/50 hover:bg-black/70"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleMute(video.id);
-                        }}
-                      >
-                        {isMuted[video.id] ? (
-                          <VolumeX className="h-4 w-4 text-white" />
-                        ) : (
-                          <Volume2 className="h-4 w-4 text-white" />
-                        )}
-                      </Button>
+                  {/* Play Button Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                      <Play className="h-8 w-8 text-black ml-1" />
                     </div>
                   </div>
+
+                  {/* Duration Badge */}
+                  <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDuration(video.duration)}
+                  </div>
+
+                  {/* Category Badge */}
+                  <div className="absolute top-2 left-2">
+                    <span className="bg-primary text-white text-xs px-2 py-1 rounded font-medium">
+                      NEWS
+                    </span>
+                  </div>
+
+                  {/* Video Title Overlay - Bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 drop-shadow-lg">
+                      {video.title}
+                    </h3>
+
+                    {/* Channel and Views */}
+                    <div className="flex items-center justify-between text-sm text-white/80 mb-2">
+                      <span className="font-medium">
+                        {video.channelName || "Unknown Channel"}
+                      </span>
+                      <span>{formatViews(video.viewCount)} views</span>
+                    </div>
+
+                    {/* Tags Overlay */}
+                    {video.hashtags && video.hashtags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {video.hashtags
+                          .slice(0, 3)
+                          .map((tag: string, index: number) => (
+                            <span
+                              key={index}
+                              className="text-xs bg-white/20 text-white px-2 py-1 rounded-full backdrop-blur-sm"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {/* Duration Badge */}
-              <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                {video.duration}
-              </div>
-            </div>
-
-            {/* Video Info */}
-            <div className="p-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm line-clamp-2 text-foreground mb-1">
-                  {video.title}
-                </h3>
-                <p className="text-xs text-muted-foreground mb-2">
-                  {video.channel?.name || 'Unknown Channel'}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{formatViews(video.views)} views</span>
-                  <span>•</span>
-                  <span>{formatTimeAgo(video.publishedAt)}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 px-2"
-                    onClick={() => toggleLike(video.id)}
-                  >
-                    <Heart className={`h-4 w-4 ${likes[video.id] ? 'fill-red-500 text-red-500' : ''}`} />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-8 px-2">
-                    <Share className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button size="sm" variant="ghost" className="h-8 px-2">
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
+          {/* Gradient Fade Effects */}
+          {canScrollLeft && (
+            <div className="absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-muted/30 to-transparent pointer-events-none" />
+          )}
+          {canScrollRight && (
+            <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-muted/30 to-transparent pointer-events-none" />
+          )}
+        </div>
       </div>
 
-      {/* View All Videos Button */}
-      <div className="text-center mt-6">
-        <Link href={`/${currentLocale}/videos`}>
-          <Button variant="outline" className="px-6 py-2">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View All Videos
-          </Button>
-        </Link>
-        {videos.length > maxVideos && (
-          <p className="text-sm text-muted-foreground mt-2">
-            Showing {maxVideos} of {videos.length} videos
-          </p>
-        )}
-      </div>
-    </div>
+      {/* Video Popup */}
+      <VideoPopup
+        video={selectedVideo}
+        isOpen={isPopupOpen}
+        onClose={handleClosePopup}
+      />
+    </section>
   );
 };
 

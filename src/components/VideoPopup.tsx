@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 import { X, Heart, Share2, Bookmark, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ interface YouTubeVideoData {
   viewCount: number;
   likeCount: number;
   duration: string;
-  hashtags: string[];
+  hashtags?: string[];
   youtubeUrl: string;
   channelName?: string;
 }

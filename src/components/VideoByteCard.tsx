@@ -63,26 +63,20 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
   };
 
   return (
-    <div className="news-card p-0 max-w-sm mx-auto group">
-      <div className="relative aspect-video overflow-hidden">
+    <div className="news-card p-0 w-72 group cursor-pointer">
+      <div className="relative aspect-video overflow-hidden rounded-t-lg">
         <img
           src={video.thumbnail}
           alt={video.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
 
-        {/* Play Button Overlay */}
-        <Link
-          href={`/${currentLocale}/videos`}
-          className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        >
-          <Button
-            size="lg"
-            className="rounded-full bg-white/90 text-black hover:bg-white pointer-events-none"
-          >
-            <Play className="h-6 w-6 ml-1" />
-          </Button>
-        </Link>
+        {/* Play Button Overlay - Always visible */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-black/50 rounded-full p-3">
+            <Play className="h-8 w-8 text-white fill-current" />
+          </div>
+        </div>
 
         {/* Duration Badge */}
         <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
@@ -95,7 +89,7 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
             <span
               className={`category-badge ${
                 video.category.name?.toLowerCase() || "uncategorized"
-              } text-xs`}
+              } text-xs px-2 py-1 rounded`}
             >
               {video.category.name}
             </span>
@@ -103,14 +97,10 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
         )}
       </div>
 
-      <div className="p-4">
-        <h3 className="font-semibold text-lg leading-tight mb-2 line-clamp-2">
+      <div className="p-4 bg-white dark:bg-gray-800 rounded-b-lg">
+        <h3 className="font-semibold text-base leading-tight mb-2 line-clamp-2 text-gray-900 dark:text-white">
           {video.title}
         </h3>
-
-        <p className="body-small text-muted-foreground mb-3 line-clamp-2">
-          {video.description}
-        </p>
 
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
           <div className="flex items-center space-x-3">
@@ -123,20 +113,23 @@ const VideoByteCard = ({ video }: VideoByteCardProps) => {
               <span>{formatViews(video.likes)}</span>
             </div>
           </div>
+          <div className="text-xs text-gray-500">
+            {formatDuration(video.duration)}
+          </div>
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-border">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <Heart className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <Share2 className="h-4 w-4" />
             </Button>
           </div>
 
           <Link href={`/${currentLocale}/videos`}>
-            <Button variant="outline" size="sm" className="text-xs">
+            <Button variant="outline" size="sm" className="text-xs h-8 px-3">
               <Play className="h-3 w-3 mr-1" />
               Watch
             </Button>
