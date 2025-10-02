@@ -91,9 +91,10 @@ const MasonryHighlights: React.FC<MasonryHighlightsProps> = ({ className = '' })
   }, [page]);
 
   const handlePageChange = (newPage: number) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('page', newPage.toString());
-    router.push(url.pathname + url.search);
+    const locale = params?.locale || 'en';
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('page', newPage.toString());
+    router.push(`/${locale}/highlights?${searchParams.toString()}`);
   };
 
   if (isLoading) {
