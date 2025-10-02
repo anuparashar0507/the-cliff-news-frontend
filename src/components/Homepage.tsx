@@ -84,7 +84,7 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
       </section>
 
       {/* Breaking News Banner */}
-      {breakingNewsData?.articles && breakingNewsData.articles.length > 0 && (
+      {breakingNewsData?.breakingNews && breakingNewsData.breakingNews.length > 0 && (
         <section className="py-8 bg-gradient-to-r from-red-600 to-red-700">
           <div className="container mx-auto px-4">
             <div className="flex items-center mb-4">
@@ -96,7 +96,7 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {(breakingNewsData?.articles || []).slice(0, 3).map((article: Article) => (
+              {(breakingNewsData?.breakingNews || []).slice(0, 3).map((article: Article) => (
                 <div key={article.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <h3 className="text-white font-semibold text-sm leading-tight mb-2 line-clamp-2">
                     {article.title}
@@ -125,7 +125,18 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
 
       {/* Video Bytes Section */}
       <HorizontalVideoScroll
-        videos={videoBytesData?.shorts || []}
+        videos={(videoBytesData?.shorts || []).map(short => ({
+          id: short.id,
+          title: short.title,
+          description: short.title, // Use title as description
+          thumbnail: short.thumbnail,
+          publishedAt: new Date().toISOString(), // Default to current date
+          viewCount: 0, // Default value
+          likeCount: 0, // Default value
+          duration: short.duration,
+          youtubeUrl: `https://youtube.com/watch?v=${short.videoId}`,
+          channelName: 'The Cliff News'
+        }))}
         title="Video Bytes"
         subtitle="News in motion - quick video updates"
       />

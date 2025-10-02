@@ -149,7 +149,7 @@ const EnhancedHeroSection = ({
               <div className="flex items-center space-x-2 bg-muted/50 rounded-full px-3 py-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 <span className="text-sm">
-                  {formatDate(currentArticle.publishedAt)}
+                  {formatDate(currentArticle.publishedAt || new Date().toISOString())}
                 </span>
               </div>
               <div className="bg-muted/50 rounded-full px-3 py-1.5 text-sm">
@@ -249,7 +249,7 @@ const EnhancedHeroSection = ({
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4" />
                 <span className="text-sm">
-                  {formatDate(currentArticle.publishedAt)}
+                  {formatDate(currentArticle.publishedAt || new Date().toISOString())}
                 </span>
               </div>
               <div className="text-sm">{currentArticle.readTime} min read</div>

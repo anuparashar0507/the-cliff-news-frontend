@@ -61,7 +61,7 @@ const QuickReadCard = ({ item }: QuickReadCardProps) => {
         <div className="flex justify-between items-center text-xs text-muted-foreground mb-4">
           <div className="flex items-center space-x-1">
             <Clock className="h-3 w-3" />
-            <span>{formatTimeAgo(item.publishedAt)}</span>
+            <span>{formatTimeAgo(item.publishedAt || new Date().toISOString())}</span>
           </div>
         </div>
 

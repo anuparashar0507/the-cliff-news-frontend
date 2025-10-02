@@ -215,7 +215,7 @@ const HoroscopeSection: React.FC = () => {
               <CardContent className="p-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2">
-                    <h3 className="font-bold text-xl mb-4 text-foreground">Today's Prediction</h3>
+                    <h3 className="font-bold text-xl mb-4 text-foreground">Today&apos;s Prediction</h3>
                     <p className="text-muted-foreground leading-relaxed text-lg">
                       {selectedSign.prediction}
                     </p>

@@ -11,23 +11,24 @@ const mockArticles: Article[] = [
     content: 'Full article content here...',
     featuredImage: '/api/placeholder/800/400',
     author: {
-      id: '1',
-      name: 'The Cliff News Team',
-      avatar: '/api/placeholder/40/40'
+      name: 'The Cliff News Team'
     },
     category: {
-      id: '1',
       name: 'Science',
-      slug: 'science'
+      slug: 'science',
+      color: 'blue'
     },
     publishedAt: '2024-09-28T10:00:00Z',
     updatedAt: '2024-09-28T10:00:00Z',
-    isFeatured: true,
     isBreaking: true,
-    tags: ['climate', 'technology', 'science'],
+    isTopStory: true,
+    status: 'PUBLISHED',
+    tags: 'climate,technology,science',
     readTime: 5,
-    views: 125000,
-    language: 'en'
+    viewCount: 125000,
+    shareCount: 850,
+    commentCount: 120,
+    language: 'ENGLISH'
   },
   {
     id: '2',
@@ -52,7 +53,7 @@ const mockArticles: Article[] = [
     tags: ['business', 'economy', 'trade'],
     readTime: 7,
     views: 89000,
-    language: 'en'
+    language: 'ENGLISH'
   },
   {
     id: '3',
@@ -77,7 +78,7 @@ const mockArticles: Article[] = [
     tags: ['sports', 'championship', 'entertainment'],
     readTime: 4,
     views: 67000,
-    language: 'en'
+    language: 'ENGLISH'
   },
   {
     id: '4',
@@ -102,7 +103,7 @@ const mockArticles: Article[] = [
     tags: ['ai', 'healthcare', 'technology'],
     readTime: 6,
     views: 45000,
-    language: 'en'
+    language: 'ENGLISH'
   },
   {
     id: '5',
@@ -127,7 +128,7 @@ const mockArticles: Article[] = [
     tags: ['culture', 'festival', 'community'],
     readTime: 3,
     views: 23000,
-    language: 'en'
+    language: 'ENGLISH'
   },
   {
     id: '6',
@@ -177,7 +178,7 @@ const mockArticles: Article[] = [
     tags: ['space', 'international', 'science'],
     readTime: 8,
     views: 56000,
-    language: 'en'
+    language: 'ENGLISH'
   },
   {
     id: '8',
@@ -202,7 +203,7 @@ const mockArticles: Article[] = [
     tags: ['infrastructure', 'development', 'national'],
     readTime: 6,
     views: 41000,
-    language: 'en'
+    language: 'ENGLISH'
   }
 ];
 

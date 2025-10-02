@@ -43,15 +43,15 @@ const NITClient = () => {
         const transformedNITs: ImageItem[] = (data.nits || []).map((nit: NIT) => ({
           id: nit.id,
           title: nit.title,
-          imageUrl: nit.imageUrl,
-          caption: nit.caption,
+          imageUrl: `/api/placeholder/400/300`, // Default placeholder for NIT items
+          caption: nit.description,
           category: nit.category,
-          date: nit.date || nit.createdAt,
+          date: nit.createdAt,
           allowDownload: true, // NIT items are generally downloadable
           allowSharing: true,   // NIT items are generally shareable
-          viewCount: nit.viewCount || 0,
-          downloadCount: nit.downloadCount || 0,
-          shareCount: nit.shareCount || 0,
+          viewCount: 0,
+          downloadCount: 0,
+          shareCount: 0,
         }));
 
         setNitItems(transformedNITs);

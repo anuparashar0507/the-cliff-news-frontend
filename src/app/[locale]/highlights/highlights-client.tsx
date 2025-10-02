@@ -11,7 +11,17 @@ interface HighlightData {
   id: string;
   title: string;
   image: string;
+  imageUrl: string;
   link: string;
+  caption: string;
+  category: string;
+  date?: string;
+  createdAt?: string;
+  allowDownload?: boolean;
+  allowSharing?: boolean;
+  viewCount?: number;
+  downloadCount?: number;
+  shareCount?: number;
 }
 
 const HighlightsClient = () => {

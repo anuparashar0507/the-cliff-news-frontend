@@ -2,7 +2,7 @@ export interface CloudinaryImageProps {
   src: string;
   width?: number;
   height?: number;
-  quality?: number;
+  quality?: number | 'auto';
   format?: 'auto' | 'webp' | 'jpg' | 'png';
   crop?: 'fill' | 'fit' | 'scale' | 'thumb' | 'crop';
   gravity?: 'auto' | 'center' | 'face' | 'faces';

@@ -7,6 +7,21 @@ import { Button } from '@/components/ui/button';
 import MasonryImageGrid from '@/components/MasonryImageGrid';
 import type { ImageItem } from '@/components/MasonryImageGrid';
 
+interface HighlightData {
+  id: string;
+  title: string;
+  imageUrl: string;
+  caption: string;
+  category: string;
+  date?: string;
+  createdAt?: string;
+  allowDownload?: boolean;
+  allowSharing?: boolean;
+  viewCount?: number;
+  downloadCount?: number;
+  shareCount?: number;
+}
+
 interface MasonryHighlightsProps {
   className?: string;
 }
@@ -43,7 +58,7 @@ const MasonryHighlights: React.FC<MasonryHighlightsProps> = ({ className = '' })
         const data = await response.json();
 
         // Transform API data to ImageItem format
-        const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: any) => ({
+        const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: HighlightData) => ({
           id: highlight.id,
           title: highlight.title,
           imageUrl: highlight.imageUrl,

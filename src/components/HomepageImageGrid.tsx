@@ -6,11 +6,21 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import ImageLightbox from '@/components/ImageLightbox';
 import type { ImageItem } from '@/components/MasonryImageGrid';
+import { NIT } from '@/services/nit';
+
+interface HighlightItem {
+  id: string;
+  title: string;
+  image: string;
+  link: string;
+}
+
+type GridItem = HighlightItem | NIT;
 
 interface HomepageImageGridProps {
   title: string;
   subtitle: string;
-  items: any[];
+  items: GridItem[];
   type: 'highlights' | 'nit';
   locale: string;
   icon?: React.ReactNode;
@@ -31,19 +41,24 @@ const HomepageImageGrid: React.FC<HomepageImageGridProps> = ({
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
 
   // Transform API data to ImageItem format
-  const imageItems: ImageItem[] = items.map((item: any) => ({
-    id: item.id,
-    title: item.title,
-    imageUrl: item.imageUrl,
-    caption: item.caption,
-    category: item.category,
-    date: item.date || item.createdAt,
-    allowDownload: item.allowDownload !== false,
-    allowSharing: item.allowSharing !== false,
-    viewCount: item.viewCount || 0,
-    downloadCount: item.downloadCount || 0,
-    shareCount: item.shareCount || 0,
-  }));
+  const imageItems: ImageItem[] = items.map((item: GridItem) => {
+    // Type guard to check if it's a HighlightItem
+    const isHighlight = 'image' in item;
+
+    return {
+      id: item.id,
+      title: item.title,
+      imageUrl: isHighlight ? (item as HighlightItem).image : '/api/placeholder/400/300',
+      caption: isHighlight ? item.title : (item as NIT).description,
+      category: isHighlight ? 'highlights' : (item as NIT).category,
+      date: isHighlight ? new Date().toISOString() : (item as NIT).createdAt,
+      allowDownload: true,
+      allowSharing: true,
+      viewCount: 0,
+      downloadCount: 0,
+      shareCount: 0,
+    };
+  });
 
   const handleImageClick = (image: ImageItem) => {
     setSelectedImage(image);

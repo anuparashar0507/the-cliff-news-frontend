@@ -74,7 +74,7 @@ export function InshortCard({
   };
 
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const swipeThreshold = 100;
     const swipeVelocityThreshold = 500;
 

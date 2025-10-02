@@ -108,7 +108,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
         } catch (error) {
           playPromiseRef.current = null;
           // Ignore AbortError which happens when play() is interrupted by pause()
-          if (error.name !== 'AbortError') {
+          if (error instanceof Error && error.name !== 'AbortError') {
             console.error('Video play error:', error);
           }
         }
@@ -202,7 +202,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
         } catch (error) {
           playPromiseRef.current = null;
           // Ignore AbortError
-          if (error.name !== 'AbortError') {
+          if (error instanceof Error && error.name !== 'AbortError') {
             console.error('Video click error:', error);
           }
         }
@@ -266,7 +266,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
             // Fallback to regular video element for direct video files
             return (
               <video
-                ref={videoRef}
+                ref={videoRef as React.RefObject<HTMLVideoElement>}
                 className="w-full h-full object-cover"
                 poster={video.thumbnail}
                 loop
@@ -472,20 +472,20 @@ const InfiniteVideoScroll = ({
 
         if (response?.shorts) {
           // Map YouTube API data to VideoData format
-          const mappedVideos: VideoData[] = response.shorts.map((short: YouTubeShortResponse) => ({
+          const mappedVideos: VideoData[] = response.shorts.map((short) => ({
             id: short.id || Math.random().toString(),
             title: short.title || 'Untitled Video',
-            description: short.description || '',
-            videoUrl: short.youtubeUrl || short.videoUrl || '',
+            description: short.title || '',
+            videoUrl: `https://www.youtube.com/watch?v=${short.videoId}`,
             thumbnail: short.thumbnail || '/api/placeholder/400/600',
             duration: short.duration || '0:00',
-            views: short.viewCount || short.views || 0,
-            likes: short.likeCount || short.likes || 0,
+            views: parseInt(short.views) || 0,
+            likes: 0,
             comments: 0, // Comments not available from API
-            category: short.category?.name || 'News',
-            publishedAt: short.publishedAt || new Date().toISOString(),
+            category: 'News',
+            publishedAt: new Date().toISOString(),
             author: {
-              name: short.channelName || 'The Cliff News',
+              name: 'The Cliff News',
               avatar: '/api/placeholder/40/40'
             }
           }));
@@ -514,20 +514,20 @@ const InfiniteVideoScroll = ({
 
       if (response?.shorts) {
         // Map new YouTube API data to VideoData format
-        const newMappedVideos: VideoData[] = response.shorts.map((short: YouTubeShortResponse) => ({
+        const newMappedVideos: VideoData[] = response.shorts.map((short) => ({
           id: short.id || Math.random().toString(),
           title: short.title || 'Untitled Video',
-          description: short.description || '',
-          videoUrl: short.youtubeUrl || short.videoUrl || '',
+          description: short.title || '',
+          videoUrl: `https://www.youtube.com/watch?v=${short.videoId}`,
           thumbnail: short.thumbnail || '/api/placeholder/400/600',
           duration: short.duration || '0:00',
-          views: short.viewCount || short.views || 0,
-          likes: short.likeCount || short.likes || 0,
+          views: parseInt(short.views) || 0,
+          likes: 0,
           comments: 0, // Comments not available from API
-          category: short.category?.name || 'News',
-          publishedAt: short.publishedAt || new Date().toISOString(),
+          category: 'News',
+          publishedAt: new Date().toISOString(),
           author: {
-            name: short.channelName || 'The Cliff News',
+            name: 'The Cliff News',
             avatar: '/api/placeholder/40/40'
           }
         }));

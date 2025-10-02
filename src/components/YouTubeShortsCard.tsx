@@ -45,7 +45,7 @@ const YouTubeShortsCard = ({
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [progress, setProgress] = useState(0);
-  const hideControlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Extract YouTube video ID from URL
   const getYouTubeVideoId = (url: string) => {

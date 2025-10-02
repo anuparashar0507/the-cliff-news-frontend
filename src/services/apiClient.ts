@@ -42,7 +42,7 @@ class ApiClient {
     ): Promise<ApiResponse<T>> {
         const url = `${this.baseURL}/api${endpoint}`;
 
-        const defaultHeaders = {
+        const defaultHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
         };
 

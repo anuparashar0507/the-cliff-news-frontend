@@ -4,6 +4,7 @@ import NewsCard from '@/components/NewsCard';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Filter } from 'lucide-react';
 import Link from 'next/link';
+import { Article } from '@/services/articles';
 
 interface CategoryPageProps {
   params: {
