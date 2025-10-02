@@ -70,6 +70,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
   const videoRef = useRef<HTMLVideoElement | HTMLIFrameElement>(null);
   const playPromiseRef = useRef<Promise<void> | null>(null);
   const [isYouTubeVideo, setIsYouTubeVideo] = useState(false);
+  const youtubePlayerRef = useRef<any>(null);
 
   // Check if this is a YouTube video
   useEffect(() => {
@@ -86,6 +87,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
     const videoElement = videoRef.current;
     if (!videoElement || isYouTubeVideo) return; // Skip for YouTube videos as they're controlled by URL params
 
+    // Type guard to ensure we're working with a video element
+    const isVideoElement = (element: HTMLVideoElement | HTMLIFrameElement): element is HTMLVideoElement => {
+      return element.tagName === 'VIDEO';
+    };
+
+    if (!isVideoElement(videoElement)) return; // Skip if not a video element
+
     const handleVideoPlay = async () => {
       if (isActive && isPlaying) {
         try {
@@ -100,8 +108,8 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
           }
 
           // Only play if video is not already playing
-          if ((videoElement as HTMLVideoElement).paused) {
-            playPromiseRef.current = (videoElement as HTMLVideoElement).play();
+          if (videoElement.paused) {
+            playPromiseRef.current = videoElement.play();
             await playPromiseRef.current;
             playPromiseRef.current = null;
           }
@@ -124,11 +132,11 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
         }
 
         // Pause and reset
-        if (!(videoElement as HTMLVideoElement).paused) {
-          (videoElement as HTMLVideoElement).pause();
+        if (!videoElement.paused) {
+          videoElement.pause();
         }
         if (!isActive) {
-          (videoElement as HTMLVideoElement).currentTime = 0; // Reset to beginning when not active
+          videoElement.currentTime = 0; // Reset to beginning when not active
         }
       }
     };
@@ -137,10 +145,30 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
   }, [isActive, isPlaying, isYouTubeVideo]);
 
   useEffect(() => {
-    if (videoRef.current && !isYouTubeVideo) {
-      (videoRef.current as HTMLVideoElement).muted = isMuted;
+    const videoElement = videoRef.current;
+    if (videoElement && !isYouTubeVideo && videoElement.tagName === 'VIDEO') {
+      (videoElement as HTMLVideoElement).muted = isMuted;
+    } else if (isYouTubeVideo && youtubePlayerRef.current) {
+      // Control YouTube mute through postMessage API
+      try {
+        const iframe = youtubePlayerRef.current;
+        const message = isMuted
+          ? '{"event":"command","func":"mute","args":""}'
+          : '{"event":"command","func":"unMute","args":""}';
+
+        iframe.contentWindow?.postMessage(message, '*');
+
+        // Backup method: Send volume commands
+        setTimeout(() => {
+          const volumeMessage = isMuted
+            ? '{"event":"command","func":"setVolume","args":"0"}'
+            : '{"event":"command","func":"setVolume","args":"100"}';
+          iframe.contentWindow?.postMessage(volumeMessage, '*');
+        }, 100);
+      } catch (error) {
+        console.debug('YouTube mute control error:', error);
+      }
     }
-    // For YouTube videos, mute is controlled by URL parameters
   }, [isMuted, isYouTubeVideo]);
 
   useEffect(() => {
@@ -172,10 +200,20 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
 
   const handleVideoClick = async () => {
     if (!hasError) {
-      if (isYouTubeVideo) {
-        // For YouTube videos, just toggle the playing state
-        // The iframe will be recreated with new autoplay parameter
+      if (isYouTubeVideo && youtubePlayerRef.current) {
+        // For YouTube videos, control through postMessage API
         setIsPlaying(!isPlaying);
+
+        try {
+          const iframe = youtubePlayerRef.current;
+          const playMessage = isPlaying
+            ? '{"event":"command","func":"pauseVideo","args":""}'
+            : '{"event":"command","func":"playVideo","args":""}';
+
+          iframe.contentWindow?.postMessage(playMessage, '*');
+        } catch (error) {
+          console.debug('YouTube play control error:', error);
+        }
       } else if (videoRef.current) {
         const newPlayingState = !isPlaying;
         setIsPlaying(newPlayingState);
@@ -213,6 +251,19 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
   const handleVideoLoad = () => {
     setIsLoading(false);
     setHasError(false);
+
+    // For YouTube videos, listen for iframe messages
+    if (isYouTubeVideo && youtubePlayerRef.current) {
+      // Send a command to ensure API is ready
+      setTimeout(() => {
+        try {
+          const iframe = youtubePlayerRef.current;
+          iframe?.contentWindow?.postMessage('{"event":"listening"}', '*');
+        } catch (error) {
+          console.debug('YouTube API init error:', error);
+        }
+      }, 1000);
+    }
   };
 
   const handleVideoError = () => {
@@ -245,13 +296,17 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isActive, isMuted, onToggl
           const videoId = getYouTubeVideoId(video.videoUrl);
 
           if (videoId) {
-            // Use YouTube embed for YouTube URLs
-            const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=${isActive && isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}&controls=0&modestbranding=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1`;
+            // Use YouTube embed for YouTube URLs with enablejsapi=1 for API control
+            const origin = typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000';
+            const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=${isActive && isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}&controls=0&modestbranding=1&rel=0&loop=1&playlist=${videoId}&enablejsapi=1&origin=${origin}`;
 
             return (
               <iframe
-                key={`${videoId}-${isActive}-${isPlaying}-${isMuted}`} // Force recreation when state changes
-                ref={videoRef as React.RefObject<HTMLIFrameElement>}
+                key={`${videoId}-${isActive}-${isPlaying}`} // Remove isMuted from key to prevent recreation
+                ref={(el) => {
+                  (videoRef as React.MutableRefObject<HTMLIFrameElement | null>).current = el;
+                  youtubePlayerRef.current = el;
+                }}
                 src={embedUrl}
                 className="w-full h-full"
                 frameBorder="0"
@@ -475,15 +530,15 @@ const InfiniteVideoScroll = ({
           const mappedVideos: VideoData[] = response.shorts.map((short) => ({
             id: short.id || Math.random().toString(),
             title: short.title || 'Untitled Video',
-            description: short.title || '',
-            videoUrl: `https://www.youtube.com/watch?v=${short.videoId}`,
+            description: short.description || short.title || '',
+            videoUrl: short.youtubeUrl || `https://www.youtube.com/watch?v=${short.id}`,
             thumbnail: short.thumbnail || '/api/placeholder/400/600',
             duration: short.duration || '0:00',
-            views: parseInt(short.views) || 0,
+            views: short.viewCount || 0,
             likes: 0,
             comments: 0, // Comments not available from API
             category: 'News',
-            publishedAt: new Date().toISOString(),
+            publishedAt: short.publishedAt || new Date().toISOString(),
             author: {
               name: 'The Cliff News',
               avatar: '/api/placeholder/40/40'
@@ -517,15 +572,15 @@ const InfiniteVideoScroll = ({
         const newMappedVideos: VideoData[] = response.shorts.map((short) => ({
           id: short.id || Math.random().toString(),
           title: short.title || 'Untitled Video',
-          description: short.title || '',
-          videoUrl: `https://www.youtube.com/watch?v=${short.videoId}`,
+          description: short.description || short.title || '',
+          videoUrl: short.youtubeUrl || `https://www.youtube.com/watch?v=${short.id}`,
           thumbnail: short.thumbnail || '/api/placeholder/400/600',
           duration: short.duration || '0:00',
-          views: parseInt(short.views) || 0,
+          views: short.viewCount || 0,
           likes: 0,
           comments: 0, // Comments not available from API
           category: 'News',
-          publishedAt: new Date().toISOString(),
+          publishedAt: short.publishedAt || new Date().toISOString(),
           author: {
             name: 'The Cliff News',
             avatar: '/api/placeholder/40/40'

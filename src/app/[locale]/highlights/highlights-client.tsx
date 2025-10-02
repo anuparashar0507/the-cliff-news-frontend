@@ -216,26 +216,6 @@ const HighlightsClient = () => {
                 </Button>
               </div>
 
-              {/* Page Header */}
-              <div className="mb-12">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
-                      Highlights Collection
-                    </h2>
-                    <div className="w-16 h-1 bg-orange-600 rounded-full"></div>
-                    <p className="text-gray-600 dark:text-gray-300 mt-3">
-                      {highlights.length} visual highlights and curated stories available
-                    </p>
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
-                      <Images className="h-12 w-12 text-orange-500 mx-auto mb-2" />
-                      <p className="text-sm text-orange-600 dark:text-orange-400 font-medium text-center">Visual Stories</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Masonry Grid */}
               <MasonryImageGrid

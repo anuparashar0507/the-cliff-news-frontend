@@ -1,22 +1,39 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 
 const Footer = () => {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const currentLocale = pathname?.split('/')[1] || 'en';
+
+  // Avoid hydration mismatch by waiting for component to mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   return (
     <footer className="border-t border-border bg-card">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">
-                  TC
-                </span>
+            <Link href={`/${currentLocale}`} className="flex items-center">
+              <div className="relative h-8 md:h-10">
+                <Image
+                  src={mounted && theme === 'dark' ? "/dark-logo.png" : "/light-logo.png"}
+                  alt="The Cliff News"
+                  width={150}
+                  height={40}
+                  className="h-full w-auto object-contain"
+                  style={{ maxHeight: '100%' }}
+                />
               </div>
-              <span className="font-bold text-xl text-foreground">
-                The Cliff News
-              </span>
-            </div>
+            </Link>
             <p className="text-muted-foreground text-sm">
               Your trusted source for the latest breaking news, politics,
               entertainment, sports, and more.
@@ -29,7 +46,7 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/"
+                  href={`/${currentLocale}`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Home
@@ -37,7 +54,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/inshorts"
+                  href={`/${currentLocale}/quick-reads`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Quick Reads
@@ -45,7 +62,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/videos"
+                  href={`/${currentLocale}/videos`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Videos
@@ -53,7 +70,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/highlights"
+                  href={`/${currentLocale}/highlights`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Highlights
@@ -68,7 +85,7 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/category/politics"
+                  href={`/${currentLocale}/category/politics`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Politics
@@ -76,7 +93,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/category/entertainment"
+                  href={`/${currentLocale}/category/entertainment`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Entertainment
@@ -84,7 +101,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/category/sports"
+                  href={`/${currentLocale}/category/sports`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Sports
@@ -92,7 +109,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/category/business"
+                  href={`/${currentLocale}/category/business`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Business
@@ -107,7 +124,7 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/about"
+                  href={`/${currentLocale}/about`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   About Us
@@ -115,7 +132,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/contact"
+                  href={`/${currentLocale}/contact`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Contact
@@ -123,7 +140,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/privacy"
+                  href={`/${currentLocale}/privacy`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Privacy Policy
@@ -131,7 +148,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/terms"
+                  href={`/${currentLocale}/terms`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Terms of Service

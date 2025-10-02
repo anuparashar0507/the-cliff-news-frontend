@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 const ScrollingTicker = () => {
-  const { isDark } = useTheme();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch by waiting for component to mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return; // Don't run until mounted to avoid hydration issues
+
     const script = document.createElement("script");
     script.src =
       "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
@@ -28,7 +36,7 @@ const ScrollingTicker = () => {
         { proName: "FOREXCOM:DJI", title: "DOW JONES" },
         { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
       ],
-      colorTheme: isDark ? "dark" : "light",
+      colorTheme: theme === "dark" ? "dark" : "light",
       locale: "en",
       largeChartUrl: "",
       isTransparent: false,
@@ -54,7 +62,7 @@ const ScrollingTicker = () => {
         existingScript.remove();
       }
     };
-  }, [isDark]);
+  }, [mounted, theme]);
 
   return (
     <div className="w-full  min-h-max border-b border-border">

@@ -3,10 +3,14 @@
 interface YouTubeShort {
   id: string;
   title: string;
-  videoId: string;
+  description: string;
   thumbnail: string;
+  publishedAt: string;
+  viewCount: number;
+  likeCount: number;
   duration: string;
-  views: string;
+  hashtags: string[];
+  youtubeUrl: string;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

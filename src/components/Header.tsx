@@ -17,7 +17,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -48,7 +48,13 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch by waiting for component to mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const pathname = usePathname();
   const currentLocale = pathname?.split('/')[1] || 'en';
 
@@ -112,7 +118,7 @@ const Header = () => {
           <Link href={`/${currentLocale}`} className="flex items-center flex-shrink-0">
             <div className="relative h-8 md:h-10 lg:h-12">
               <Image
-                src={isDark ? "/dark-logo.png" : "/light-logo.png"}
+                src={mounted && theme === 'dark' ? "/dark-logo.png" : "/light-logo.png"}
                 alt="The Cliff News"
                 width={180}
                 height={50}
@@ -231,11 +237,11 @@ const Header = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleTheme}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2"
               aria-label="Toggle theme"
             >
-              {isDark ? (
+              {mounted && theme === 'dark' ? (
                 <Sun className="h-4 w-4" />
               ) : (
                 <Moon className="h-4 w-4" />
@@ -309,7 +315,7 @@ const Header = () => {
             <SheetTitle className="flex items-center justify-between text-foreground">
               <div className="relative h-10">
                 <Image
-                  src={isDark ? "/dark-logo.png" : "/light-logo.png"}
+                  src={mounted && theme === 'dark' ? "/dark-logo.png" : "/light-logo.png"}
                   alt="The Cliff News"
                   width={150}
                   height={40}
@@ -388,17 +394,17 @@ const Header = () => {
                     Appearance
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    ({isDark ? 'Dark' : 'Light'})
+                    ({mounted && theme === 'dark' ? 'Dark' : 'Light'})
                   </span>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={toggleTheme}
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                   className="p-2 border-border hover:bg-muted"
                   aria-label="Toggle theme"
                 >
-                  {isDark ? (
+                  {mounted && theme === 'dark' ? (
                     <Sun className="h-4 w-4 text-yellow-500" />
                   ) : (
                     <Moon className="h-4 w-4 text-gray-600" />

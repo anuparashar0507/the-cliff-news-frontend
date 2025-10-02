@@ -48,7 +48,9 @@ const HomepageImageGrid: React.FC<HomepageImageGridProps> = ({
     return {
       id: item.id,
       title: item.title,
-      imageUrl: isHighlight ? (item as HighlightItem).image : '/api/placeholder/400/300',
+      imageUrl: isHighlight
+        ? (item as HighlightItem).image
+        : (item as NIT).imageUrl || '/api/placeholder/400/300',
       caption: isHighlight ? item.title : (item as NIT).description,
       category: isHighlight ? 'highlights' : (item as NIT).category,
       date: isHighlight ? new Date().toISOString() : (item as NIT).createdAt,

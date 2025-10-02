@@ -1,23 +1,25 @@
 export interface NIT {
     id: string;
     title: string;
-    description: string;
-    department: string;
-    tenderNumber: string;
-    publishedDate: string;
-    lastDate: string;
-    value: string;
-    status: 'active' | 'closed' | 'upcoming';
-    category: string;
+    description?: string;
+    department?: string;
+    tenderNumber?: string;
+    publishedDate?: string;
+    lastDate?: string;
+    value?: string;
+    status?: 'active' | 'closed' | 'upcoming';
+    category?: string;
     downloadUrl?: string;
-    contactInfo: {
+    contactInfo?: {
         officer: string;
         phone: string;
         email: string;
     };
-    location: string;
+    location?: string;
+    imageUrl?: string; // Add imageUrl field for API response
+    date?: string;     // Add date field for API response
     createdAt: string;
-    updatedAt: string;
+    updatedAt?: string;
 }
 
 export interface NITFilters {

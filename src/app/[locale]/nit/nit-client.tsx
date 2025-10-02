@@ -43,8 +43,8 @@ const NITClient = () => {
         const transformedNITs: ImageItem[] = (data.nits || []).map((nit: NIT) => ({
           id: nit.id,
           title: nit.title,
-          imageUrl: `/api/placeholder/400/300`, // Default placeholder for NIT items
-          caption: nit.description,
+          imageUrl: nit.imageUrl || `/api/placeholder/400/300`, // Use actual image from API
+          caption: nit.description || nit.title,
           category: nit.category,
           date: nit.createdAt,
           allowDownload: true, // NIT items are generally downloadable
@@ -200,26 +200,6 @@ const NITClient = () => {
                 </Button>
               </div>
 
-              {/* Page Header */}
-              <div className="mb-12">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
-                      NIT Collection
-                    </h2>
-                    <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
-                    <p className="text-gray-600 dark:text-gray-300 mt-3">
-                      {nitItems.length} tender notices and procurement announcements available
-                    </p>
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                      <Clock className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-                      <p className="text-sm text-blue-600 dark:text-blue-400 font-medium text-center">Official Tenders</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Masonry Grid */}
               <MasonryImageGrid

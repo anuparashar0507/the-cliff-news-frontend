@@ -5,24 +5,21 @@ import EnhancedHeroSection from "./EnhancedHeroSection";
 import NewsCard from "./NewsCard";
 import QuickReadsSection from "./QuickReadsSection";
 import DynamicCategorySections from "./DynamicCategorySections";
-import HorizontalVideoScroll from "./HorizontalVideoScroll";
-import HomepageImageGrid from "./HomepageImageGrid";
+import VideoSection from "./VideoSection";
+import HomepageHighlights from "./HomepageHighlights";
+import HomepageNIT from "./HomepageNIT";
 import HoroscopeSection from "./HoroscopeSection";
-import { Images, Clock } from "lucide-react";
 import {
   getArticles,
   getTopStories,
   getBreakingNews,
   getQuickReads,
-  getHighlights,
-  getYouTubeShorts,
-  getNit,
 } from "@/lib/api";
 import { Article } from "@/services/articles";
 
-const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
+const Homepage = async ({ locale = "en" }: { locale?: string }) => {
   // Convert locale to backend language format
-  const language = locale === 'hi' ? 'HINDI' : 'ENGLISH';
+  const language = locale === "hi" ? "HINDI" : "ENGLISH";
 
   // Fetch critical data first
   const articlesData = await getArticles(10, language);
@@ -32,22 +29,17 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
   const settledResults = await Promise.allSettled([
     getQuickReads(5, language),
     getBreakingNews(3, language),
-    getHighlights(5),
-    getNit(5),
-    getYouTubeShorts(10)
   ]);
 
-  const quickReadsData = settledResults[0].status === 'fulfilled' ? settledResults[0].value : null;
-  const breakingNewsData = settledResults[1].status === 'fulfilled' ? settledResults[1].value : null;
-  const highlightsData = settledResults[2].status === 'fulfilled' ? settledResults[2].value : null;
-  const nitData = settledResults[3].status === 'fulfilled' ? settledResults[3].value : null;
-  const videoBytesData = settledResults[4].status === 'fulfilled' ? settledResults[4].value : null;
+  const quickReadsData =
+    settledResults[0].status === "fulfilled" ? settledResults[0].value : null;
+  const breakingNewsData =
+    settledResults[1].status === "fulfilled" ? settledResults[1].value : null;
 
-  console.log('Current locale:', locale, 'Language:', language);
+  console.log("Current locale:", locale, "Language:", language);
 
   // Filter articles by category for hero section
   const articles: Article[] = articlesData?.articles || [];
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +67,10 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
           {/* Enhanced Top Stories Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
             {(topStoriesData?.topStories || []).map((article, index) => (
-              <div key={article.id} className={`${index < 2 ? 'xl:col-span-2' : ''}`}>
+              <div
+                key={article.id}
+                className={`${index < 2 ? "xl:col-span-2" : ""}`}
+              >
                 <NewsCard article={article} variant="featured" />
               </div>
             ))}
@@ -84,7 +79,7 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
       </section>
 
       {/* Breaking News Banner */}
-      {breakingNewsData?.breakingNews && breakingNewsData.breakingNews.length > 0 && (
+      {/* {breakingNewsData?.breakingNews && breakingNewsData.breakingNews.length > 0 && (
         <section className="py-8 bg-gradient-to-r from-red-600 to-red-700">
           <div className="container mx-auto px-4">
             <div className="flex items-center mb-4">
@@ -112,7 +107,7 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* Quick Reads Section */}
       <QuickReadsSection locale={locale} />
@@ -124,50 +119,16 @@ const Homepage = async ({ locale = 'en' }: { locale?: string }) => {
       />
 
       {/* Video Bytes Section */}
-      <HorizontalVideoScroll
-        videos={(videoBytesData?.shorts || []).map(short => ({
-          id: short.id,
-          title: short.title,
-          description: short.title, // Use title as description
-          thumbnail: short.thumbnail,
-          publishedAt: new Date().toISOString(), // Default to current date
-          viewCount: 0, // Default value
-          likeCount: 0, // Default value
-          duration: short.duration,
-          youtubeUrl: `https://youtube.com/watch?v=${short.videoId}`,
-          channelName: 'The Cliff News'
-        }))}
+      <VideoSection
         title="Video Bytes"
         subtitle="News in motion - quick video updates"
       />
 
       {/* News Highlights Section */}
-      {highlightsData?.highlights && highlightsData.highlights.length > 0 && (
-        <HomepageImageGrid
-          title="News Highlights"
-          subtitle="Visual highlights and important stories from The Cliff News"
-          items={highlightsData.highlights}
-          type="highlights"
-          locale={locale}
-          icon={<Images className="h-8 w-8 text-orange-500" />}
-          bgColor="bg-orange-50 dark:bg-orange-900/10"
-          linkColor="bg-orange-500 hover:bg-orange-600"
-        />
-      )}
+      <HomepageHighlights locale={locale} />
 
       {/* Notice Inviting Tenders (NIT) Section */}
-      {nitData?.nits && nitData.nits.length > 0 && (
-        <HomepageImageGrid
-          title="Notice Inviting Tenders (NIT)"
-          subtitle="Official tender notices and procurement announcements"
-          items={nitData.nits}
-          type="nit"
-          locale={locale}
-          icon={<Clock className="h-8 w-8 text-blue-500" />}
-          bgColor="bg-blue-50 dark:bg-blue-900/10"
-          linkColor="bg-blue-500 hover:bg-blue-600"
-        />
-      )}
+      <HomepageNIT locale={locale} />
 
       {/* Horoscope Section */}
       <HoroscopeSection />
