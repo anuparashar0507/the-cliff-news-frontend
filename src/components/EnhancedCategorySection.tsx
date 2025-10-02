@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import NewsCard from "./NewsCard";
 import { Article } from "@/services";
+import { useLocale } from "next-intl";
 
 interface EnhancedCategorySectionProps {
   title: string;
@@ -25,6 +26,7 @@ const EnhancedCategorySection = ({
   maxArticles = 5,
   categorySlug,
 }: EnhancedCategorySectionProps) => {
+  const locale = useLocale();
   const backgroundClasses = {
     default: "",
     muted: "bg-muted/30",
@@ -143,7 +145,7 @@ const EnhancedCategorySection = ({
 
           {showViewAll && displayArticles.length > 0 && (
             <Link
-              href={`/category/${categorySlug || title.toLowerCase()}`}
+              href={`/${locale}/category/${categorySlug || title.toLowerCase()}`}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               View all →
@@ -159,7 +161,7 @@ const EnhancedCategorySection = ({
         {/* Mobile View All Button */}
         {showViewAll && displayArticles.length > 0 && (
           <div className="flex justify-center mt-12 lg:hidden">
-            <Link href={`/category/${categorySlug || title.toLowerCase()}`}>
+            <Link href={`/${locale}/category/${categorySlug || title.toLowerCase()}`}>
               <Button variant="outline" className="group">
                 View All {title}
                 <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />

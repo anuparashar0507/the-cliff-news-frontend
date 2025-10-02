@@ -23,6 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useLocale } from "next-intl";
 
 // Navigation item interface
 interface NavigationItem {
@@ -56,7 +57,7 @@ const Header = () => {
     setMounted(true);
   }, []);
   const pathname = usePathname();
-  const currentLocale = pathname?.split('/')[1] || 'en';
+  const currentLocale = useLocale();
 
   // Handle scroll effect
   useEffect(() => {

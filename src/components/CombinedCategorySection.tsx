@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import NewsCard from "./NewsCard";
 import { Article } from "@/services";
+import { useLocale } from "next-intl";
 
 interface CombinedCategorySectionProps {
   title: string;
@@ -25,6 +26,7 @@ const CombinedCategorySection = ({
   backgroundColor = "default",
   maxArticlesPerCategory = 3,
 }: CombinedCategorySectionProps) => {
+  const locale = useLocale();
   const backgroundClasses = {
     default: "",
     muted: "bg-muted/30",
@@ -69,7 +71,7 @@ const CombinedCategorySection = ({
                   <div className={`w-8 h-1 rounded-full ${category.color || 'bg-primary/60'}`}></div>
                 </div>
 
-                <Link href={`/category/${category.name.toLowerCase()}`}>
+                <Link href={`/${locale}/category/${category.name.toLowerCase()}`}>
                   <Button variant="ghost" size="sm" className="group text-muted-foreground hover:text-primary">
                     View All
                     <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />

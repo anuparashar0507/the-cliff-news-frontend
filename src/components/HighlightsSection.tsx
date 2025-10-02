@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "next-intl";
 
 interface Highlight {
   id: string;
@@ -41,6 +42,7 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
   limit = 6,
   showViewAll = true,
 }) => {
+  const locale = useLocale();
 
   const getPriorityBadge = (isBreaking: boolean) => {
     if (isBreaking) {
@@ -93,7 +95,7 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
 
           {showViewAll && (
             <Button variant="outline" className="group" asChild>
-              <Link href="/highlights">
+              <Link href={`/${locale}/highlights`}>
                 View All Highlights
                 <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
               </Link>
@@ -220,7 +222,7 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
         {showViewAll && (
           <div className="mt-8 text-center md:hidden">
             <Button variant="outline" className="group" asChild>
-              <Link href="/highlights">
+              <Link href={`/${locale}/highlights`}>
                 View All Highlights
                 <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
               </Link>

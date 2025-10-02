@@ -4,13 +4,14 @@ import { locales, defaultLocale } from './src/i18n/request';
 export default createMiddleware({
   locales,
   defaultLocale,
-  localePrefix: 'as-needed'
+  localePrefix: 'always'
 });
 
 export const config = {
   matcher: [
-    '/',
-    '/(hi|en)/:path*',
-    '/((?!api|_next|_vercel|.*\\..*|favicon.ico|sitemap.xml|robots.txt).*)',
+    // Match all pathnames except for
+    // - … if they start with `/api`, `/_next` or `/_vercel`
+    // - … the ones containing a dot (e.g. `favicon.ico`)
+    '/((?!api|_next|_vercel|.*\\..*).*)'
   ]
 };

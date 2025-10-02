@@ -16,6 +16,24 @@ interface CategoryPageProps {
   };
 }
 
+// Generate static params for known categories
+export async function generateStaticParams() {
+  const categories = [
+    'national',
+    'politics',
+    'business',
+    'sports',
+    'entertainment',
+    'technology',
+    'health',
+    'science'
+  ];
+
+  return categories.map((slug) => ({
+    slug,
+  }));
+}
+
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { locale, slug } = params;
   const page = parseInt(searchParams.page || '1');
