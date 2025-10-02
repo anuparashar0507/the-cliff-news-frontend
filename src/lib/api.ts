@@ -163,12 +163,23 @@ export async function getNewsByCategory(
   params.set('limit', limit.toString());
   if (language) params.set('language', language);
 
-  return await fetchAPI<{
+  const result = await fetchAPI<{
+    success: boolean;
     articles: Article[];
     totalPages: number;
     currentPage: number;
     totalCount: number;
+    category?: any;
   }>(`/articles/category/${categorySlug}?${params.toString()}`);
+
+  if (!result) return null;
+
+  return {
+    articles: result.articles,
+    totalPages: result.totalPages,
+    currentPage: result.currentPage,
+    totalCount: result.totalCount,
+  };
 }
 
 export async function getCategories() {
