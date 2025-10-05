@@ -55,11 +55,11 @@ const EnhancedCategorySection = ({
       gaming: "🎮",
       music: "🎵",
       art: "🎨",
-      default: "📰"
+      default: "📰",
     };
 
     // Get icon based on category name or use default
-    const categoryKey = title.toLowerCase().replace(/\s+/g, '');
+    const categoryKey = title.toLowerCase().replace(/\s+/g, "");
     const icon = iconMap[categoryKey] || iconMap.default;
 
     // Use category color from articles if available, otherwise use default
@@ -72,9 +72,9 @@ const EnhancedCategorySection = ({
         bgColor: `bg-primary/5`,
         icon,
         customStyle: {
-          '--category-color': categoryColor,
-          color: categoryColor
-        }
+          "--category-color": categoryColor,
+          color: categoryColor,
+        },
       };
     }
 
@@ -83,11 +83,11 @@ const EnhancedCategorySection = ({
       color: "text-primary",
       bgColor: "bg-primary/5",
       icon,
-      customStyle: {}
+      customStyle: {},
     };
   };
 
-  const categoryTheme = getCategoryTheme();
+  // const categoryTheme = getCategoryTheme();
   const displayArticles = articles.slice(0, maxArticles);
 
   if (displayArticles.length === 0) return null;
@@ -101,7 +101,7 @@ const EnhancedCategorySection = ({
 
       {/* Secondary Articles */}
       <div className="space-y-6">
-        {displayArticles.slice(1, 4).map((article) => (
+        {displayArticles.slice(1, maxArticles).map((article) => (
           <NewsCard key={article.id} article={article} variant="compact" />
         ))}
       </div>
@@ -145,7 +145,9 @@ const EnhancedCategorySection = ({
 
           {showViewAll && displayArticles.length > 0 && (
             <Link
-              href={`/${locale}/category/${categorySlug || title.toLowerCase()}`}
+              href={`/${locale}/category/${
+                categorySlug || title.toLowerCase()
+              }`}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               View all →
@@ -161,7 +163,11 @@ const EnhancedCategorySection = ({
         {/* Mobile View All Button */}
         {showViewAll && displayArticles.length > 0 && (
           <div className="flex justify-center mt-12 lg:hidden">
-            <Link href={`/${locale}/category/${categorySlug || title.toLowerCase()}`}>
+            <Link
+              href={`/${locale}/category/${
+                categorySlug || title.toLowerCase()
+              }`}
+            >
               <Button variant="outline" className="group">
                 View All {title}
                 <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />

@@ -18,6 +18,24 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    serverComponentsExternalPackages: ['canvas', 'pdfjs-dist'],
+  },
+  webpack: (config, { isServer }) => {
+    // Fix for pdfjs-dist canvas dependency
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+      };
+    }
+
+    return config;
   },
   async rewrites() {
     return [

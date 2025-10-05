@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import EnhancedCategorySection from './EnhancedCategorySection';
-import { Article } from '@/services/articles';
+import { useState, useEffect } from "react";
+import EnhancedCategorySection from "./EnhancedCategorySection";
+import { Article } from "@/services/articles";
 
 interface Category {
   id: string;
@@ -12,7 +12,7 @@ interface Category {
 }
 
 interface DynamicCategorySectionsProps {
-  language: 'ENGLISH' | 'HINDI';
+  language: "ENGLISH" | "HINDI";
   excludeCategories?: string[];
 }
 
@@ -23,9 +23,11 @@ interface CategoryWithArticles {
 
 const DynamicCategorySections = ({
   language,
-  excludeCategories = []
+  excludeCategories = [],
 }: DynamicCategorySectionsProps) => {
-  const [categoriesWithArticles, setCategoriesWithArticles] = useState<CategoryWithArticles[]>([]);
+  const [categoriesWithArticles, setCategoriesWithArticles] = useState<
+    CategoryWithArticles[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,21 +39,25 @@ const DynamicCategorySections = ({
 
         // Fetch both categories and articles in parallel for better performance
         const [categoriesResponse, articlesResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories?active=true`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/articles?limit=100&language=${language}`)
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/categories?active=true`
+          ),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/articles?limit=100&language=${language}`
+          ),
         ]);
 
         if (!categoriesResponse.ok) {
-          throw new Error('Failed to fetch categories');
+          throw new Error("Failed to fetch categories");
         }
 
         if (!articlesResponse.ok) {
-          throw new Error('Failed to fetch articles');
+          throw new Error("Failed to fetch articles");
         }
 
         const [categoriesData, articlesData] = await Promise.all([
           categoriesResponse.json(),
-          articlesResponse.json()
+          articlesResponse.json(),
         ]);
 
         const categories = categoriesData?.categories || [];
@@ -76,17 +82,29 @@ const DynamicCategorySections = ({
         });
 
         // Create category-article pairs, only including categories with articles
-        const categoriesWithValidArticles: CategoryWithArticles[] = filteredCategories
-          .map((category: Category) => ({
-            category,
-            articles: (articlesByCategory.get(category.slug) || []).slice(0, 6)
-          }))
-          .filter(({ articles }: { articles: Article[] }) => articles.length > 0);
+        const categoriesWithValidArticles: CategoryWithArticles[] =
+          filteredCategories
+            .map((category: Category) => {
+              // Fetch 7 articles for all categories (hero layout needs 7)
+              const maxArticles = 7;
+              return {
+                category,
+                articles: (articlesByCategory.get(category.slug) || []).slice(
+                  0,
+                  maxArticles
+                ),
+              };
+            })
+            .filter(
+              ({ articles }: { articles: Article[] }) => articles.length > 0
+            );
 
-        console.log(`Loaded ${categoriesWithValidArticles.length} categories with articles`);
+        console.log(
+          `Loaded ${categoriesWithValidArticles.length} categories with articles`
+        );
         setCategoriesWithArticles(categoriesWithValidArticles);
       } catch (error) {
-        console.error('Error fetching categories and articles:', error);
+        console.error("Error fetching categories and articles:", error);
         setError(`Failed to load categories: ${error}`);
       } finally {
         setIsLoading(false);
@@ -106,7 +124,10 @@ const DynamicCategorySections = ({
                 <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="bg-gray-200 dark:bg-gray-700 rounded-lg h-64"></div>
+                    <div
+                      key={i}
+                      className="bg-gray-200 dark:bg-gray-700 rounded-lg h-64"
+                    ></div>
                   ))}
                 </div>
               </div>
@@ -118,12 +139,14 @@ const DynamicCategorySections = ({
   }
 
   if (error) {
-    console.error('Categories section error:', error);
+    console.error("Categories section error:", error);
     // Still try to render if we have any data
     if (categoriesWithArticles.length === 0) {
       return (
         <div className="py-8 text-center text-gray-500">
-          <p>Unable to load category sections. Please try refreshing the page.</p>
+          <p>
+            Unable to load category sections. Please try refreshing the page.
+          </p>
         </div>
       );
     }
@@ -141,10 +164,29 @@ const DynamicCategorySections = ({
     <div className="space-y-0">
       {categoriesWithArticles.map(({ category, articles }, index) => {
         // Alternate between different layouts and backgrounds for visual variety
-        const layouts = ['grid', 'featured', 'hero'] as const;
-        const backgrounds = ['default', 'muted', 'accent'] as const;
+        const layouts = ["grid", "featured", "hero"] as const;
+        const backgrounds = ["default", "muted", "accent"] as const;
 
-        const layout = layouts[index % layouts.length];
+        // Custom layout assignment for specific categories
+        let layout = layouts[index % layouts.length];
+        const categorySlug = category.slug.toLowerCase();
+        let maxArticles = 6;
+
+        if (categorySlug === "entertainment") {
+          layout = "featured";
+          maxArticles = 7;
+        } else if (categorySlug === "sports") {
+          layout = "featured";
+        } else if (categorySlug === "education") {
+          layout = "grid";
+        } else if (categorySlug === "business") {
+          layout = "featured";
+        }
+        // Hero and Featured layouts always need 7 articles
+        if (layout === "hero" || layout === "featured") {
+          maxArticles = 7;
+        }
+
         const backgroundColor = backgrounds[index % backgrounds.length];
 
         return (
@@ -155,7 +197,7 @@ const DynamicCategorySections = ({
             layout={layout}
             backgroundColor={backgroundColor}
             categorySlug={category.slug}
-            maxArticles={6}
+            maxArticles={maxArticles}
           />
         );
       })}

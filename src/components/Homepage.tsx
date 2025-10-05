@@ -1,19 +1,17 @@
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 import ScrollingTicker from "./ScrollingTicker";
 import EnhancedHeroSection from "./EnhancedHeroSection";
 import NewsCard from "./NewsCard";
 import QuickReadsSection from "./QuickReadsSection";
 import DynamicCategorySections from "./DynamicCategorySections";
 import VideoSection from "./VideoSection";
-import HomepageHighlights from "./HomepageHighlights";
-import HomepageNIT from "./HomepageNIT";
+
 import HoroscopeSection from "./HoroscopeSection";
+import StreamlinedEPaperSection from "./StreamlinedEPaperSection";
 import {
   getArticles,
   getTopStories,
-  getBreakingNews,
-  getQuickReads,
+  // getBreakingNews,
+  // getQuickReads,
 } from "@/lib/api";
 import { Article } from "@/services/articles";
 
@@ -23,18 +21,18 @@ const Homepage = async ({ locale = "en" }: { locale?: string }) => {
 
   // Fetch critical data first
   const articlesData = await getArticles(10, language);
-  const topStoriesData = await getTopStories(4, language);
+  const topStoriesData = await getTopStories(6, language);
 
   // Then fetch less critical data with error fallbacks
-  const settledResults = await Promise.allSettled([
-    getQuickReads(5, language),
-    getBreakingNews(3, language),
-  ]);
+  // const settledResults = await Promise.allSettled([
+  //   getQuickReads(5, language),
+  //   getBreakingNews(3, language),
+  // ]);
 
-  const quickReadsData =
-    settledResults[0].status === "fulfilled" ? settledResults[0].value : null;
-  const breakingNewsData =
-    settledResults[1].status === "fulfilled" ? settledResults[1].value : null;
+  // const quickReadsData =
+  //   settledResults[0].status === "fulfilled" ? settledResults[0].value : null;
+  // const breakingNewsData =
+  //   settledResults[1].status === "fulfilled" ? settledResults[1].value : null;
 
   console.log("Current locale:", locale, "Language:", language);
 
@@ -65,14 +63,9 @@ const Homepage = async ({ locale = "en" }: { locale?: string }) => {
           </div>
 
           {/* Enhanced Top Stories Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8">
-            {(topStoriesData?.topStories || []).map((article, index) => (
-              <div
-                key={article.id}
-                className={`${index < 2 ? "xl:col-span-2" : ""}`}
-              >
-                <NewsCard article={article} variant="featured" />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {(topStoriesData?.topStories || []).map((article) => (
+              <NewsCard key={article.id} article={article} variant="featured" />
             ))}
           </div>
         </div>
@@ -109,9 +102,14 @@ const Homepage = async ({ locale = "en" }: { locale?: string }) => {
         </section>
       )} */}
 
+      {/* E-Paper Section */}
+      <StreamlinedEPaperSection />
+
       {/* Quick Reads Section */}
       <QuickReadsSection locale={locale} />
 
+      {/* Horoscope Section */}
+      <HoroscopeSection />
       {/* Dynamic Category Sections - All Categories */}
       <DynamicCategorySections
         language={language}
@@ -125,13 +123,10 @@ const Homepage = async ({ locale = "en" }: { locale?: string }) => {
       />
 
       {/* News Highlights Section */}
-      <HomepageHighlights locale={locale} />
+      {/* <HomepageHighlights locale={locale} /> */}
 
       {/* Notice Inviting Tenders (NIT) Section */}
-      <HomepageNIT locale={locale} />
-
-      {/* Horoscope Section */}
-      <HoroscopeSection />
+      {/* <HomepageNIT locale={locale} /> */}
     </div>
   );
 };

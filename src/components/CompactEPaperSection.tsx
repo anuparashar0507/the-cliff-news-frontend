@@ -1,18 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Calendar,
-  Download,
-  Search,
-  Filter,
-  Globe,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  ZoomIn
-} from "lucide-react";
+import { Calendar, Loader2, Download, Filter, Globe, ChevronLeft, ChevronRight } from "lucide-react";
+import { epapersApi, EPaper } from "@/services/epapers";
+import EPaperThumbnail from "./EPaperThumbnail";
+import EPaperViewerModal from "./EPaperViewerModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,276 +14,169 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface EpaperEdition {
-  id: string;
-  date: string;
-  language: 'en' | 'hi';
-  pages: EpaperPage[];
-  title: string;
-  thumbnail: string;
-}
-
-interface EpaperPage {
-  id: string;
-  pageNumber: number;
-  thumbnail: string;
-  fullImage: string;
-  title: string;
-}
-
 const CompactEPaperSection = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'hi' | 'all'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedEdition, setSelectedEdition] = useState<EpaperEdition | null>(null);
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [epapers, setEpapers] = useState<EPaper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedEpaper, setSelectedEpaper] = useState<EPaper | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [languageFilter, setLanguageFilter] = useState<'all' | 'english' | 'hindi'>('all');
+  const [dateFilter, setDateFilter] = useState<string>('');
+  const [currentWeek, setCurrentWeek] = useState(0); // 0 = last 7 days, 1 = previous 7 days, etc.
+  const DAYS_PER_PAGE = 7;
 
-  // Mock data - in production, fetch from API
-  const mockEditions: EpaperEdition[] = [
-    {
-      id: '1',
-      date: '2024-09-28',
-      language: 'en',
-      title: 'The Cliff News - English Edition',
-      thumbnail: '/api/placeholder/300/400',
-      pages: [
-        {
-          id: '1-1',
-          pageNumber: 1,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'Front Page - Breaking News'
-        },
-        {
-          id: '1-2',
-          pageNumber: 2,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'National News'
-        },
-        {
-          id: '1-3',
-          pageNumber: 3,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'Sports & Entertainment'
-        },
-        {
-          id: '1-4',
-          pageNumber: 4,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'Business & Technology'
-        }
-      ]
-    },
-    {
-      id: '2',
-      date: '2024-09-28',
-      language: 'hi',
-      title: 'द क्लिफ न्यूज़ - हिंदी संस्करण',
-      thumbnail: '/api/placeholder/300/400',
-      pages: [
-        {
-          id: '2-1',
-          pageNumber: 1,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'मुख्य समाचार'
-        },
-        {
-          id: '2-2',
-          pageNumber: 2,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'राष्ट्रीय समाचार'
-        },
-        {
-          id: '2-3',
-          pageNumber: 3,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'खेल और मनोरंजन'
-        },
-        {
-          id: '2-4',
-          pageNumber: 4,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'व्यापार और तकनीक'
-        }
-      ]
-    },
-    {
-      id: '3',
-      date: '2024-09-27',
-      language: 'en',
-      title: 'The Cliff News - English Edition',
-      thumbnail: '/api/placeholder/300/400',
-      pages: [
-        {
-          id: '3-1',
-          pageNumber: 1,
-          thumbnail: '/api/placeholder/300/400',
-          fullImage: '/api/placeholder/800/1200',
-          title: 'Yesterday\'s Headlines'
-        }
-      ]
-    }
-  ];
+  // Calculate date range for display
+  const getDateRangeLabel = () => {
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() - (currentWeek * DAYS_PER_PAGE));
 
-  const [editions, setEditions] = useState<EpaperEdition[]>([]);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - (DAYS_PER_PAGE - 1));
 
-  useEffect(() => {
-    // Simulate API call
-    const fetchEditions = async () => {
-      setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setEditions(mockEditions);
-      setIsLoading(false);
+    const formatShort = (date: Date) => {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    fetchEditions();
-  }, [selectedDate]);
-
-  const filteredEditions = editions.filter(edition => {
-    const matchesDate = edition.date === selectedDate;
-    const matchesLanguage = selectedLanguage === 'all' || edition.language === selectedLanguage;
-    const matchesSearch = edition.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesDate && matchesLanguage && matchesSearch;
-  });
-
-  const handlePageNavigation = (direction: 'prev' | 'next') => {
-    if (!selectedEdition) return;
-
-    if (direction === 'prev' && currentPageIndex > 0) {
-      setCurrentPageIndex(currentPageIndex - 1);
-    } else if (direction === 'next' && currentPageIndex < selectedEdition.pages.length - 1) {
-      setCurrentPageIndex(currentPageIndex + 1);
+    if (currentWeek === 0) {
+      return `Last 7 Days`;
     }
+
+    return `${formatShort(startDate)} - ${formatShort(endDate)}`;
   };
 
-  if (selectedEdition) {
-    const currentPage = selectedEdition.pages[currentPageIndex];
+  useEffect(() => {
+    const fetchEpapers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
+        // If user selected a specific date, fetch that date's papers
+        if (dateFilter) {
+          const papers = await epapersApi.getEPapers({
+            startDate: dateFilter,
+            endDate: dateFilter,
+            language: languageFilter === 'all' ? undefined : languageFilter,
+            sortBy: 'date',
+            sortOrder: 'desc',
+            limit: 10,
+          });
+          setEpapers(papers);
+          return;
+        }
+
+        // Otherwise, fetch paginated 7-day chunks
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        // Calculate date range for current page
+        const endDate = new Date(today);
+        endDate.setDate(endDate.getDate() - (currentWeek * DAYS_PER_PAGE));
+
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - (DAYS_PER_PAGE - 1));
+        startDate.setHours(0, 0, 0, 0);
+
+        // Fetch e-papers from API with date range and language filter
+        const papers = await epapersApi.getEPapers({
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          language: languageFilter === 'all' ? undefined : languageFilter,
+          sortBy: 'date',
+          sortOrder: 'desc',
+          limit: 100,
+        });
+
+        setEpapers(papers);
+      } catch (err: any) {
+        console.error('Error fetching e-papers:', err);
+
+        // Handle rate limiting error
+        if (err?.status === 429) {
+          setError('Too many requests. Please wait a few minutes and try again.');
+        } else if (err?.message?.includes('fetch')) {
+          setError('Unable to connect to server. Please check your internet connection.');
+        } else {
+          setError('Failed to load e-papers. Please try again later.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEpapers();
+  }, [currentWeek, languageFilter, dateFilter]);
+
+  // Group e-papers by date (no need to filter - already filtered by API)
+  const groupedEpapers = epapers.reduce((acc, epaper) => {
+    const dateKey = new Date(epaper.date).toISOString().split('T')[0];
+    if (!acc[dateKey]) {
+      acc[dateKey] = { english: null, hindi: null };
+    }
+    if (epaper.language.toLowerCase() === 'english') {
+      acc[dateKey].english = epaper;
+    } else {
+      acc[dateKey].hindi = epaper;
+    }
+    return acc;
+  }, {} as Record<string, { english: EPaper | null; hindi: EPaper | null }>);
+
+  const sortedDates = Object.keys(groupedEpapers).sort((a, b) =>
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      weekday: date.toLocaleDateString('en-US', { weekday: 'long' }),
+      date: date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    };
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="container mx-auto px-4">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setSelectedEdition(null);
-              setCurrentPageIndex(0);
-            }}
-            className="mb-6"
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to E-Paper Archive
-          </Button>
-
-          {/* Reader Header */}
-          <div className="bg-card border border-border rounded-lg p-4 mb-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-xl font-bold text-foreground">
-                  {selectedEdition.title}
-                </h1>
-                <p className="text-muted-foreground">
-                  {new Date(selectedEdition.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageNavigation('prev')}
-                  disabled={currentPageIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="text-sm text-muted-foreground px-3">
-                  Page {currentPageIndex + 1} of {selectedEdition.pages.length}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageNavigation('next')}
-                  disabled={currentPageIndex === selectedEdition.pages.length - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
-              </div>
-            </div>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              E-Paper Archive
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Browse and read digital editions of The Cliff News
+            </p>
           </div>
-
-          {/* Page Reader */}
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="relative">
-              <img
-                src={currentPage.fullImage}
-                alt={currentPage.title}
-                className="w-full h-auto max-h-[80vh] object-contain bg-white"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                className="absolute top-4 right-4"
-              >
-                <ZoomIn className="h-4 w-4 mr-2" />
-                Zoom
-              </Button>
-            </div>
-
-            <div className="p-4 border-t border-border">
-              <h3 className="font-semibold text-foreground">{currentPage.title}</h3>
-            </div>
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Page Thumbnails */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">All Pages</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {selectedEdition.pages.map((page, index) => (
-                <motion.div
-                  key={page.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`relative cursor-pointer ${
-                    currentPageIndex === index ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => setCurrentPageIndex(index)}
-                >
-                  <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                    <img
-                      src={page.thumbnail}
-                      alt={page.title}
-                      className="w-full aspect-[3/4] object-cover"
-                    />
-                    <div className="p-2">
-                      <p className="text-xs font-medium text-foreground">
-                        Page {page.pageNumber}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              E-Paper Archive
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Browse and read digital editions of The Cliff News
+            </p>
+          </div>
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">⚠️</div>
+            <p className="text-destructive text-lg mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
@@ -307,167 +192,243 @@ const CompactEPaperSection = () => {
             E-Paper Archive
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Browse and read digital editions of The Cliff News. Access current and archived newspapers in English and Hindi.
+            Browse and read digital editions of The Cliff News
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="bg-card border border-border rounded-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Date Picker */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                <Calendar className="inline h-4 w-4 mr-1" />
-                Date
-              </label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full"
-              />
-            </div>
+        {/* Filters - Compact */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+          {/* Language Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Globe className="h-4 w-4" />
+                {languageFilter === 'all' ? 'All Languages' :
+                 languageFilter === 'english' ? 'English' : 'हिंदी'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => {
+                setLanguageFilter('all');
+                setCurrentWeek(0);
+              }}>
+                All Languages
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setLanguageFilter('english');
+                setCurrentWeek(0);
+              }}>
+                English
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setLanguageFilter('hindi');
+                setCurrentWeek(0);
+              }}>
+                हिंदी
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* Language Filter */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                <Globe className="inline h-4 w-4 mr-1" />
-                Language
-              </label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {selectedLanguage === 'all' ? 'All Languages' :
-                     selectedLanguage === 'en' ? 'English' : 'हिंदी'}
-                    <Filter className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem onClick={() => setSelectedLanguage('all')}>
-                    All Languages
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedLanguage('en')}>
-                    English
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedLanguage('hi')}>
-                    हिंदी
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Search */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                <Search className="inline h-4 w-4 mr-1" />
-                Search
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search editions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+          {/* Date Filter */}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => {
+                setDateFilter(e.target.value);
+                setCurrentWeek(0);
+              }}
+              className="w-auto h-9"
+            />
           </div>
+
+          {/* Clear Filters */}
+          {(languageFilter !== 'all' || dateFilter) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setLanguageFilter('all');
+                setDateFilter('');
+                setCurrentWeek(0);
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-card border border-border rounded-lg overflow-hidden">
-                <div className="animate-pulse">
-                  <div className="bg-muted aspect-[3/4] w-full"></div>
-                  <div className="p-4 space-y-3">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2"></div>
+        {/* E-Papers Grid - Grouped by Date */}
+        <div className="space-y-16">
+          {sortedDates.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📰</div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">
+                No e-papers available
+              </h3>
+              <p className="text-muted-foreground">
+                Check back later for new editions.
+              </p>
+            </div>
+          ) : (
+            sortedDates.map((dateKey) => {
+              const { english, hindi } = groupedEpapers[dateKey];
+              const { weekday, date } = formatDate(dateKey);
+
+              return (
+                <div key={dateKey} className="space-y-8">
+                  {/* Date Header */}
+                  <div className="text-center border-b border-border pb-4">
+                    <h2 className="text-2xl font-bold text-foreground mb-1">{weekday}</h2>
+                    <p className="text-muted-foreground">{date}</p>
+                  </div>
+
+                  {/* E-Papers for this date */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+                    {/* English Edition */}
+                    {english && (
+                      <div
+                        className="flex flex-col items-center group cursor-pointer"
+                        onClick={() => setSelectedEpaper(english)}
+                      >
+                        {/* Edition Info - Above Thumbnail */}
+                        <div className="mb-4 text-center">
+                          <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                            English Edition
+                          </h3>
+                          <div className="flex items-center justify-center text-muted-foreground">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <p className="text-sm">{weekday}, {date}</p>
+                          </div>
+                        </div>
+
+                        {/* Thumbnail - Clean design */}
+                        <div className="group-hover:scale-[1.02] transition-transform duration-300">
+                          {english.thumbnailUrl ? (
+                            <img
+                              src={english.thumbnailUrl}
+                              alt={`English Edition - ${date}`}
+                              className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300"
+                              style={{ width: '420px', height: '594px', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300">
+                              <EPaperThumbnail
+                                pdfUrl={english.pdfUrl}
+                                width={420}
+                                height={594}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Download Button */}
+                        <a
+                          href={english.pdfUrl}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-4 flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Hindi Edition */}
+                    {hindi && (
+                      <div
+                        className="flex flex-col items-center group cursor-pointer"
+                        onClick={() => setSelectedEpaper(hindi)}
+                      >
+                        {/* Edition Info - Above Thumbnail */}
+                        <div className="mb-4 text-center">
+                          <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                            हिंदी संस्करण
+                          </h3>
+                          <div className="flex items-center justify-center text-muted-foreground">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <p className="text-sm">{weekday}, {date}</p>
+                          </div>
+                        </div>
+
+                        {/* Thumbnail - Clean design */}
+                        <div className="group-hover:scale-[1.02] transition-transform duration-300">
+                          {hindi.thumbnailUrl ? (
+                            <img
+                              src={hindi.thumbnailUrl}
+                              alt={`Hindi Edition - ${date}`}
+                              className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300"
+                              style={{ width: '420px', height: '594px', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300">
+                              <EPaperThumbnail
+                                pdfUrl={hindi.pdfUrl}
+                                width={420}
+                                height={594}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Download Button */}
+                        <a
+                          href={hindi.pdfUrl}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-4 flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="mt-12 flex justify-center items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentWeek(currentWeek - 1)}
+            disabled={currentWeek === 0}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Newer
+          </Button>
+
+          <div className="text-sm text-muted-foreground font-medium">
+            {getDateRangeLabel()}
           </div>
-        )}
 
-        {/* E-Paper Grid */}
-        {!isLoading && (
-          <AnimatePresence>
-            {filteredEditions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEditions.map((edition, index) => (
-                  <motion.div
-                    key={edition.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => setSelectedEdition(edition)}
-                  >
-                    <div className="relative">
-                      <img
-                        src={edition.thumbnail}
-                        alt={edition.title}
-                        className="w-full aspect-[3/4] object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                        <Button variant="secondary" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Read Now
-                        </Button>
-                      </div>
-                      <div className="absolute top-2 right-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          edition.language === 'hi'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {edition.language === 'hi' ? 'हिंदी' : 'English'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-4">
-                      <h3 className="font-semibold text-foreground mb-2">
-                        {edition.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {new Date(edition.date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {edition.pages.length} pages
-                        </span>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📰</div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  No editions found
-                </h3>
-                <p className="text-muted-foreground">
-                  Try adjusting your filters or search for a different date.
-                </p>
-              </div>
-            )}
-          </AnimatePresence>
-        )}
+          <Button
+            variant="outline"
+            onClick={() => setCurrentWeek(currentWeek + 1)}
+            disabled={sortedDates.length === 0}
+            className="gap-2"
+          >
+            Older
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* E-Paper Modal */}
+      {selectedEpaper && (
+        <EPaperViewerModal
+          isOpen={!!selectedEpaper}
+          onClose={() => setSelectedEpaper(null)}
+          pdfUrl={selectedEpaper.pdfUrl}
+          title={`${selectedEpaper.language === 'english' ? 'English' : 'हिंदी'} Edition - ${formatDate(selectedEpaper.date).date}`}
+        />
+      )}
     </div>
   );
 };
