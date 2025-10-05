@@ -25,12 +25,15 @@ const StreamlinedEPaperSection = () => {
   const [englishPaper, setEnglishPaper] = useState<EPaperDisplay | null>(null);
   const [hindiPaper, setHindiPaper] = useState<EPaperDisplay | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
 
     const fetchEPapers = async () => {
       try {
+        setError(null);
+
         // Fetch English e-paper
         const englishResponse = await epapersApi.getTodayEPaper('english');
         if (englishResponse.data) {
@@ -54,22 +57,9 @@ const StreamlinedEPaperSection = () => {
             title: hindiResponse.data.title,
           });
         }
-      } catch (error) {
-        console.error("Error fetching e-papers:", error);
-        // Fallback to sample PDFs if API fails
-        const today = new Date();
-        setEnglishPaper({
-          language: "English",
-          pdfUrl: "/sample-pdfs/CondoLiving.pdf",
-          date: today,
-          title: "The Cliff News - English Edition",
-        });
-        setHindiPaper({
-          language: "हिंदी",
-          pdfUrl: "/sample-pdfs/TheThreeMusketeers.pdf",
-          date: today,
-          title: "द क्लिफ न्यूज़ - हिंदी संस्करण",
-        });
+      } catch (err: any) {
+        console.error("Error fetching e-papers:", err);
+        setError("Unable to load today's e-papers. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -100,6 +90,36 @@ const StreamlinedEPaperSection = () => {
           </div>
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || (!englishPaper && !hindiPaper)) {
+    return (
+      <section className="py-12 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              Today&apos;s Digital E-Paper
+            </h2>
+            <div className="w-12 h-1 bg-primary rounded-full mx-auto"></div>
+          </div>
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">📰</div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              {error || "No e-papers available"}
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Please check back later or visit our archive page.
+            </p>
+            <a
+              href="/en/epaper"
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              View Archive
+            </a>
           </div>
         </div>
       </section>
