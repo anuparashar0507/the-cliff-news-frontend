@@ -138,7 +138,7 @@ const CompactEPaperSection = () => {
 
   const handleShare = (epaper: EPaper) => {
     const formattedDate = new Date(epaper.date).toLocaleDateString(
-      epaper.language === 'ENGLISH' ? 'en-US' : 'hi-IN',
+      epaper.language === 'english' ? 'en-US' : 'hi-IN',
       {
         weekday: 'long',
         day: 'numeric',
@@ -148,7 +148,7 @@ const CompactEPaperSection = () => {
     );
 
     const message =
-      epaper.language === 'ENGLISH'
+      epaper.language === 'english'
         ? `📰 *The Cliff News - English Edition*\n📅 ${formattedDate}\n\nRead the digital newspaper:\n${window.location.origin}/en/epaper\n\n#TheCliffNews #EPaper #News`
         : `📰 *द क्लिफ न्यूज़ - हिंदी संस्करण*\n📅 ${formattedDate}\n\nडिजिटल अखबार पढ़ें:\n${window.location.origin}/en/epaper\n\n#TheCliffNews #EPaper #समाचार`;
 
