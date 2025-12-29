@@ -160,7 +160,7 @@ const CompactEPaperSection = () => {
       navigator
         .share({
           title:
-            epaper.language === 'ENGLISH'
+            epaper.language === 'english'
               ? `The Cliff News - ${formattedDate}`
               : `द क्लिफ न्यूज़ - ${formattedDate}`,
           text: message,
