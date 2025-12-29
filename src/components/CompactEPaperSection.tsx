@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Loader2, Download, Filter, Globe, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Loader2, Download, Filter, Globe, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { epapersApi, EPaper } from "@/services/epapers";
 import EPaperThumbnail from "./EPaperThumbnail";
 import EPaperViewerModal from "./EPaperViewerModal";
@@ -134,6 +134,48 @@ const CompactEPaperSection = () => {
         day: 'numeric'
       })
     };
+  };
+
+  const handleShare = (epaper: EPaper) => {
+    const formattedDate = new Date(epaper.date).toLocaleDateString(
+      epaper.language === 'ENGLISH' ? 'en-US' : 'hi-IN',
+      {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }
+    );
+
+    const message =
+      epaper.language === 'ENGLISH'
+        ? `📰 *The Cliff News - English Edition*\n📅 ${formattedDate}\n\nRead the digital newspaper:\n${window.location.origin}/en/epaper\n\n#TheCliffNews #EPaper #News`
+        : `📰 *द क्लिफ न्यूज़ - हिंदी संस्करण*\n📅 ${formattedDate}\n\nडिजिटल अखबार पढ़ें:\n${window.location.origin}/en/epaper\n\n#TheCliffNews #EPaper #समाचार`;
+
+    // WhatsApp share
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+    // Try native share API first, fallback to WhatsApp
+    if (navigator.share) {
+      navigator
+        .share({
+          title:
+            epaper.language === 'ENGLISH'
+              ? `The Cliff News - ${formattedDate}`
+              : `द क्लिफ न्यूज़ - ${formattedDate}`,
+          text: message,
+          url: `${window.location.origin}/en/epaper`,
+        })
+        .catch((error) => {
+          if (error.name !== 'AbortError') {
+            console.log('Share failed, opening WhatsApp:', error);
+            window.open(whatsappUrl, '_blank');
+          }
+        });
+    } else {
+      // Fallback to WhatsApp
+      window.open(whatsappUrl, '_blank');
+    }
   };
 
   if (isLoading) {
@@ -323,16 +365,28 @@ const CompactEPaperSection = () => {
                           )}
                         </div>
 
-                        {/* Download Button */}
-                        <a
-                          href={english.pdfUrl}
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-4 flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </a>
+                        {/* Action Buttons */}
+                        <div className="mt-4 flex items-center gap-3">
+                          <a
+                            href={english.pdfUrl}
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </a>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShare(english);
+                            }}
+                            className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <Share2 className="h-4 w-4 mr-2" />
+                            Share
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -373,16 +427,28 @@ const CompactEPaperSection = () => {
                           )}
                         </div>
 
-                        {/* Download Button */}
-                        <a
-                          href={hindi.pdfUrl}
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-4 flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </a>
+                        {/* Action Buttons */}
+                        <div className="mt-4 flex items-center gap-3">
+                          <a
+                            href={hindi.pdfUrl}
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            डाउनलोड
+                          </a>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShare(hindi);
+                            }}
+                            className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <Share2 className="h-4 w-4 mr-2" />
+                            साझा करें
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -1,10 +1,37 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { StarIcon, ArrowRight, Sparkles } from 'lucide-react';
+import { StarIcon, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+
+// Zodiac sign metadata (symbols and dates don't change)
+const zodiacMetadata: Record<string, { symbol: string; dates: string }> = {
+  aries: { symbol: '♈', dates: 'Mar 21 - Apr 19' },
+  taurus: { symbol: '♉', dates: 'Apr 20 - May 20' },
+  gemini: { symbol: '♊', dates: 'May 21 - Jun 20' },
+  cancer: { symbol: '♋', dates: 'Jun 21 - Jul 22' },
+  leo: { symbol: '♌', dates: 'Jul 23 - Aug 22' },
+  virgo: { symbol: '♍', dates: 'Aug 23 - Sep 22' },
+  libra: { symbol: '♎', dates: 'Sep 23 - Oct 22' },
+  scorpio: { symbol: '♏', dates: 'Oct 23 - Nov 21' },
+  sagittarius: { symbol: '♐', dates: 'Nov 22 - Dec 21' },
+  capricorn: { symbol: '♑', dates: 'Dec 22 - Jan 19' },
+  aquarius: { symbol: '♒', dates: 'Jan 20 - Feb 18' },
+  pisces: { symbol: '♓', dates: 'Feb 19 - Mar 20' },
+};
+
+interface HoroscopeData {
+  id: string;
+  sign: string;
+  date: string;
+  prediction: string;
+  luckyNumber: number | null;
+  luckyColor: string | null;
+  compatibility: string | null;
+  mood: string | null;
+}
 
 interface ZodiacSign {
   id: string;
@@ -18,144 +45,77 @@ interface ZodiacSign {
   mood: 'excellent' | 'good' | 'average' | 'challenging';
 }
 
-const zodiacSigns: ZodiacSign[] = [
-  {
-    id: 'aries',
-    name: 'Aries',
-    symbol: '♈',
-    dates: 'Mar 21 - Apr 19',
-    prediction: 'Today brings new opportunities in career. Your leadership skills will shine bright. Avoid impulsive decisions in financial matters.',
-    luckNumber: 7,
-    luckColor: 'Red',
-    compatibility: 'Leo',
-    mood: 'excellent'
-  },
-  {
-    id: 'taurus',
-    name: 'Taurus',
-    symbol: '♉',
-    dates: 'Apr 20 - May 20',
-    prediction: 'A stable day ahead with focus on family relationships. Your patience will be rewarded. Good time for investments.',
-    luckNumber: 3,
-    luckColor: 'Green',
-    compatibility: 'Virgo',
-    mood: 'good'
-  },
-  {
-    id: 'gemini',
-    name: 'Gemini',
-    symbol: '♊',
-    dates: 'May 21 - Jun 20',
-    prediction: 'Communication is key today. Network with new people. Unexpected news may come your way. Stay flexible.',
-    luckNumber: 12,
-    luckColor: 'Yellow',
-    compatibility: 'Aquarius',
-    mood: 'good'
-  },
-  {
-    id: 'cancer',
-    name: 'Cancer',
-    symbol: '♋',
-    dates: 'Jun 21 - Jul 22',
-    prediction: 'Focus on emotional well-being today. Family matters need attention. Your intuition guides you correctly.',
-    luckNumber: 9,
-    luckColor: 'Silver',
-    compatibility: 'Scorpio',
-    mood: 'average'
-  },
-  {
-    id: 'leo',
-    name: 'Leo',
-    symbol: '♌',
-    dates: 'Jul 23 - Aug 22',
-    prediction: 'Your charismatic energy attracts success today. Creative projects flourish. Romance is in the air.',
-    luckNumber: 5,
-    luckColor: 'Gold',
-    compatibility: 'Sagittarius',
-    mood: 'excellent'
-  },
-  {
-    id: 'virgo',
-    name: 'Virgo',
-    symbol: '♍',
-    dates: 'Aug 23 - Sep 22',
-    prediction: 'Attention to detail pays off. Health requires focus. Organize your priorities for better productivity.',
-    luckNumber: 6,
-    luckColor: 'Navy Blue',
-    compatibility: 'Capricorn',
-    mood: 'good'
-  },
-  {
-    id: 'libra',
-    name: 'Libra',
-    symbol: '♎',
-    dates: 'Sep 23 - Oct 22',
-    prediction: 'Balance is key in all relationships today. Artistic endeavors bring joy. Avoid conflict and seek harmony.',
-    luckNumber: 8,
-    luckColor: 'Pink',
-    compatibility: 'Gemini',
-    mood: 'good'
-  },
-  {
-    id: 'scorpio',
-    name: 'Scorpio',
-    symbol: '♏',
-    dates: 'Oct 23 - Nov 21',
-    prediction: 'Deep transformation begins today. Trust your instincts. Hidden opportunities reveal themselves.',
-    luckNumber: 11,
-    luckColor: 'Maroon',
-    compatibility: 'Pisces',
-    mood: 'challenging'
-  },
-  {
-    id: 'sagittarius',
-    name: 'Sagittarius',
-    symbol: '♐',
-    dates: 'Nov 22 - Dec 21',
-    prediction: 'Adventure calls and you must answer. Learning opportunities abound. Long-distance connections prove beneficial.',
-    luckNumber: 4,
-    luckColor: 'Purple',
-    compatibility: 'Aries',
-    mood: 'excellent'
-  },
-  {
-    id: 'capricorn',
-    name: 'Capricorn',
-    symbol: '♑',
-    dates: 'Dec 22 - Jan 19',
-    prediction: 'Hard work gets recognition today. Business ventures look promising. Stay grounded in your approach.',
-    luckNumber: 10,
-    luckColor: 'Brown',
-    compatibility: 'Taurus',
-    mood: 'good'
-  },
-  {
-    id: 'aquarius',
-    name: 'Aquarius',
-    symbol: '♒',
-    dates: 'Jan 20 - Feb 18',
-    prediction: 'Innovation and technology bring success. Friends play important role. Think outside the box.',
-    luckNumber: 2,
-    luckColor: 'Turquoise',
-    compatibility: 'Libra',
-    mood: 'good'
-  },
-  {
-    id: 'pisces',
-    name: 'Pisces',
-    symbol: '♓',
-    dates: 'Feb 19 - Mar 20',
-    prediction: 'Spiritual insights guide your day. Creative expression flows naturally. Dreams hold important messages.',
-    luckNumber: 1,
-    luckColor: 'Sea Green',
-    compatibility: 'Cancer',
-    mood: 'average'
-  }
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://cliff-news-backend.onrender.com';
 
 const HoroscopeSection: React.FC = () => {
   const [selectedSign, setSelectedSign] = useState<ZodiacSign | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [horoscopes, setHoroscopes] = useState<ZodiacSign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch horoscopes from API
+  useEffect(() => {
+    const fetchHoroscopes = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`${API_BASE_URL}/api/horoscope`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          // Transform API data to match our component interface
+          const transformedData: ZodiacSign[] = result.data.map((horoscope: HoroscopeData) => {
+            const metadata = zodiacMetadata[horoscope.sign] || { symbol: '⭐', dates: '' };
+            return {
+              id: horoscope.sign,
+              name: horoscope.sign.charAt(0).toUpperCase() + horoscope.sign.slice(1),
+              symbol: metadata.symbol,
+              dates: metadata.dates,
+              prediction: horoscope.prediction,
+              luckNumber: horoscope.luckyNumber || Math.floor(Math.random() * 99) + 1,
+              luckColor: horoscope.luckyColor || 'Blue',
+              compatibility: horoscope.compatibility || 'Leo',
+              mood: (horoscope.mood as 'excellent' | 'good' | 'average' | 'challenging') || 'good',
+            };
+          });
+
+          // Sort by zodiac order
+          const zodiacOrder = Object.keys(zodiacMetadata);
+          transformedData.sort((a, b) => zodiacOrder.indexOf(a.id) - zodiacOrder.indexOf(b.id));
+
+          setHoroscopes(transformedData);
+        } else {
+          throw new Error('Failed to fetch horoscopes');
+        }
+      } catch (err) {
+        console.error('Error fetching horoscopes:', err);
+        setError('Failed to load horoscopes. Please try again later.');
+        // Use fallback data on error
+        setHoroscopes(getFallbackHoroscopes());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHoroscopes();
+  }, []);
+
+  // Fallback horoscopes if API fails
+  const getFallbackHoroscopes = (): ZodiacSign[] => {
+    return Object.entries(zodiacMetadata).map(([sign, metadata]) => ({
+      id: sign,
+      name: sign.charAt(0).toUpperCase() + sign.slice(1),
+      symbol: metadata.symbol,
+      dates: metadata.dates,
+      prediction: 'Today brings new opportunities for growth and success. Trust your instincts and stay positive.',
+      luckNumber: Math.floor(Math.random() * 99) + 1,
+      luckColor: 'Blue',
+      compatibility: 'Leo',
+      mood: 'good' as const,
+    }));
+  };
 
   const getMoodColor = (mood: string) => {
     switch (mood) {
@@ -167,7 +127,28 @@ const HoroscopeSection: React.FC = () => {
     }
   };
 
-  const displayedSigns = showAll ? zodiacSigns : zodiacSigns.slice(0, 6);
+  const displayedSigns = showAll ? horoscopes : horoscopes.slice(0, 6);
+
+  // Get today's date for display
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950 dark:via-blue-950 dark:to-indigo-950">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-12 w-12 text-purple-600 animate-spin mb-4" />
+            <p className="text-muted-foreground text-lg">Loading horoscopes...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950 dark:via-blue-950 dark:to-indigo-950">
@@ -183,8 +164,17 @@ const HoroscopeSection: React.FC = () => {
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Discover what the stars have in store for you today. Get personalized insights and guidance for your zodiac sign.
           </p>
+          <p className="text-sm text-purple-600 dark:text-purple-400 mt-2 font-medium">
+            {today}
+          </p>
           <div className="w-20 h-1 bg-gradient-to-r from-purple-400 to-pink-400 mx-auto mt-4 rounded-full"></div>
         </div>
+
+        {error && (
+          <div className="max-w-md mx-auto mb-8 p-4 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-center">
+            <p>{error}</p>
+          </div>
+        )}
 
         {selectedSign ? (
           <div className="max-w-4xl mx-auto">
@@ -287,7 +277,7 @@ const HoroscopeSection: React.FC = () => {
               ))}
             </div>
 
-            {!showAll && (
+            {!showAll && horoscopes.length > 6 && (
               <div className="text-center mt-8">
                 <Button
                   onClick={() => setShowAll(true)}

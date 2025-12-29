@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, Share2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import Image from "next/image";
 import EPaperThumbnail from "./EPaperThumbnail";
-import { epapersApi, EPaper } from "@/services";
+import { epapersApi } from "@/services";
+import { Button } from "@/components/ui/button";
 
 const EPaperViewerModal = dynamic(() => import("./EPaperViewerModal"), {
   ssr: false,
@@ -78,6 +81,48 @@ const StreamlinedEPaperSection = () => {
     setSelectedPaper(null);
   };
 
+  const handleShare = (paper: EPaperDisplay) => {
+    const formattedDate = paper.date.toLocaleDateString(
+      paper.language === "English" ? "en-US" : "hi-IN",
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }
+    );
+
+    const message =
+      paper.language === "English"
+        ? `📰 *The Cliff News - English Edition*\n📅 ${formattedDate}\n\nRead today's digital newspaper:\n${window.location.origin}/en/epaper\n\n#TheCliffNews #EPaper #News`
+        : `📰 *द क्लिफ न्यूज़ - हिंदी संस्करण*\n📅 ${formattedDate}\n\nआज का डिजिटल अखबार पढ़ें:\n${window.location.origin}/en/epaper\n\n#TheCliffNews #EPaper #समाचार`;
+
+    // WhatsApp share
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+    // Try native share API first, fallback to WhatsApp
+    if (navigator.share) {
+      navigator
+        .share({
+          title:
+            paper.language === "English"
+              ? `The Cliff News - ${formattedDate}`
+              : `द क्लिफ न्यूज़ - ${formattedDate}`,
+          text: message,
+          url: `${window.location.origin}/en/epaper`,
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") {
+            console.log("Share failed, opening WhatsApp:", error);
+            window.open(whatsappUrl, "_blank");
+          }
+        });
+    } else {
+      // Fallback to WhatsApp
+      window.open(whatsappUrl, "_blank");
+    }
+  };
+
   if (loading) {
     return (
       <section className="py-12 bg-muted/30">
@@ -114,12 +159,12 @@ const StreamlinedEPaperSection = () => {
             <p className="text-muted-foreground mb-6">
               Please check back later or visit our archive page.
             </p>
-            <a
+            <Link
               href="/en/epaper"
               className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               View Archive
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -142,7 +187,7 @@ const StreamlinedEPaperSection = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-6xl mx-auto">
             {/* English Edition */}
             {englishPaper && (
-              <div className="flex flex-col items-center group cursor-pointer">
+              <div className="flex flex-col items-center group">
                 {/* Edition Info - Above Thumbnail */}
                 <div className="mb-4 text-center">
                   <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
@@ -165,16 +210,20 @@ const StreamlinedEPaperSection = () => {
 
                 {/* Thumbnail - No background, clean shadow */}
                 <div
-                  className="group-hover:scale-[1.02] transition-transform duration-300"
+                  className="group-hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                   onClick={() => handleEPaperClick(englishPaper)}
                 >
                   {englishPaper.thumbnailUrl ? (
-                    <img
-                      src={englishPaper.thumbnailUrl}
-                      alt="English E-Paper First Page"
-                      className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300"
-                      style={{ maxWidth: '100%', height: 'auto' }}
-                    />
+                    <div className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300">
+                      <Image
+                        src={englishPaper.thumbnailUrl}
+                        alt="English E-Paper First Page"
+                        width={420}
+                        height={594}
+                        className="w-full h-auto"
+                        unoptimized
+                      />
+                    </div>
                   ) : (
                     <div className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300">
                       <EPaperThumbnail
@@ -187,12 +236,26 @@ const StreamlinedEPaperSection = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Share Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShare(englishPaper);
+                  }}
+                  className="mt-4 gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
               </div>
             )}
 
             {/* Hindi Edition */}
             {hindiPaper && (
-              <div className="flex flex-col items-center group cursor-pointer">
+              <div className="flex flex-col items-center group">
                 {/* Edition Info - Above Thumbnail */}
                 <div className="mb-4 text-center">
                   <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
@@ -215,7 +278,7 @@ const StreamlinedEPaperSection = () => {
 
                 {/* Thumbnail - No background, clean shadow */}
                 <div
-                  className="group-hover:scale-[1.02] transition-transform duration-300"
+                  className="group-hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                   onClick={() => handleEPaperClick(hindiPaper)}
                 >
                   {hindiPaper.thumbnailUrl ? (
@@ -237,6 +300,20 @@ const StreamlinedEPaperSection = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Share Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShare(hindiPaper);
+                  }}
+                  className="mt-4 gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  साझा करें
+                </Button>
               </div>
             )}
           </div>
