@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { Article } from "@/services";
+import { formatTimeAgo } from "@/lib/formatTimeAgo";
 
 interface NewsCardProps {
   article: Article;
@@ -13,14 +14,6 @@ interface NewsCardProps {
 
 const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
   const locale = useLocale();
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   if (variant === "compact") {
     return (
@@ -53,7 +46,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
                 {article.title}
               </h3>
               <div className="flex items-center text-xs text-muted-foreground">
-                <span>{formatDate(article.publishedAt || new Date().toISOString())}</span>
+                <span>{formatTimeAgo(article.publishedAt || new Date().toISOString())}</span>
                 <span className="mx-2">•</span>
                 <span>{article.readTime} min</span>
               </div>
@@ -109,7 +102,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
               <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
                 <div className="flex items-center space-x-1">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>{formatDate(article.publishedAt || new Date().toISOString())}</span>
+                  <span>{formatTimeAgo(article.publishedAt || new Date().toISOString())}</span>
                 </div>
                 <span>{article.readTime} min read</span>
               </div>
@@ -162,7 +155,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
               <div className="flex items-center text-white/60 text-xs">
                 <span>{article.category?.name?.toUpperCase()}</span>
                 <span className="mx-2">|</span>
-                <span>{formatDate(article.publishedAt || new Date().toISOString())}</span>
+                <span>{formatTimeAgo(article.publishedAt || new Date().toISOString())}</span>
                 <span className="mx-2">|</span>
                 <span>{article.readTime} min</span>
               </div>
@@ -213,7 +206,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-auto">
             <div className="flex items-center space-x-2">
               <Clock className="h-3 w-3" />
-              <span>{formatDate(article.publishedAt || new Date().toISOString())}</span>
+              <span>{formatTimeAgo(article.publishedAt || new Date().toISOString())}</span>
             </div>
             <span>{article.readTime} min read</span>
           </div>

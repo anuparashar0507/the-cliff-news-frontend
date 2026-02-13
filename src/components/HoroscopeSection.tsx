@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StarIcon, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { useLocale } from 'next-intl';
 
 // Zodiac sign metadata (symbols and dates don't change)
 const zodiacMetadata: Record<string, { symbol: string; dates: string }> = {
@@ -53,6 +54,7 @@ const HoroscopeSection: React.FC = () => {
   const [horoscopes, setHoroscopes] = useState<ZodiacSign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const locale = useLocale();
 
   // Fetch horoscopes from API
   useEffect(() => {
@@ -61,7 +63,8 @@ const HoroscopeSection: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`${API_BASE_URL}/api/horoscope`);
+        const language = locale === 'hi' ? 'HINDI' : 'ENGLISH';
+        const response = await fetch(`${API_BASE_URL}/api/horoscope?language=${language}`);
         const result = await response.json();
 
         if (result.success && result.data) {

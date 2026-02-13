@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, Menu, X, Moon, Sun, ChevronDown, Home, FileText, ImageIcon, Newspaper, Tag } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, Menu, X, Moon, Sun, ChevronDown, Home, FileText, ImageIcon, Newspaper, Tag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +24,8 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useLocale } from "next-intl";
+import { articlesApi, Article } from "@/services/articles";
+import { formatTimeAgo } from "@/lib/formatTimeAgo";
 
 // Navigation item interface
 interface NavigationItem {
@@ -49,8 +51,13 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchResults, setSearchResults] = useState<Article[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   // Avoid hydration mismatch by waiting for component to mount
   useEffect(() => {
@@ -68,14 +75,105 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current && !searchRef.current.contains(event.target as Node) &&
+        mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await articlesApi.getArticles({ search: searchQuery.trim(), limit: 5 });
+        const articles = (response as any).articles || response.data || [];
+        setSearchResults(articles);
+        setShowSearchDropdown(true);
+      } catch (error) {
+        console.error('Search failed:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      // Implement search functionality
-      console.log('Searching for:', searchQuery);
-    }
+    // Search is handled by the debounced effect above
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearchDropdown(false);
+  };
+
+  const SearchDropdown = () => {
+    if (!showSearchDropdown) return null;
+    return (
+      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-[100] max-h-96 overflow-y-auto">
+        {isSearching ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
+          </div>
+        ) : searchResults.length > 0 ? (
+          <div className="py-2">
+            {searchResults.map((article) => (
+              <Link
+                key={article.id}
+                href={`/${currentLocale}/article/${article.slug}`}
+                className="flex items-start gap-3 px-4 py-3 hover:bg-muted transition-colors"
+                onClick={clearSearch}
+              >
+                {article.featuredImage && (
+                  <img
+                    src={article.featuredImage}
+                    alt=""
+                    className="w-12 h-12 rounded object-cover flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground line-clamp-2">{article.title}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {article.category && (
+                      <span className="text-xs text-primary font-medium">{article.category.name}</span>
+                    )}
+                    {article.publishedAt && (
+                      <span className="text-xs text-muted-foreground">{formatTimeAgo(article.publishedAt)}</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : searchQuery.trim().length >= 2 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            No results found for &ldquo;{searchQuery}&rdquo;
+          </div>
+        ) : null}
+      </div>
+    );
   };
 
   const navigationItems: NavigationItem[] = [
@@ -250,18 +348,31 @@ const Header = () => {
             </Button>
 
             {/* Desktop Search */}
-            <form onSubmit={handleSearch} className="hidden lg:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search news..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-48 xl:w-64 h-9 bg-background border-border focus:border-primary focus:ring-primary"
-                />
-              </div>
-            </form>
+            <div ref={searchRef} className="hidden lg:block relative">
+              <form onSubmit={handleSearch}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search news..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => searchResults.length > 0 && setShowSearchDropdown(true)}
+                    className="pl-10 w-48 xl:w-64 h-9 bg-background border-border focus:border-primary focus:ring-primary"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    >
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  )}
+                </div>
+              </form>
+              <SearchDropdown />
+            </div>
 
             {/* Mobile Menu Button */}
             <Button
@@ -329,7 +440,7 @@ const Header = () => {
 
           <div className="flex flex-col h-full bg-background">
             {/* Mobile Search */}
-            <div className="p-4 border-b border-border bg-background">
+            <div ref={mobileSearchRef} className="p-4 border-b border-border bg-background relative">
               <form onSubmit={handleSearch}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -338,10 +449,21 @@ const Header = () => {
                     placeholder="Search news..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => searchResults.length > 0 && setShowSearchDropdown(true)}
                     className="pl-10 w-full bg-background border-border focus:border-primary focus:ring-primary"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    >
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  )}
                 </div>
               </form>
+              <SearchDropdown />
             </div>
 
             {/* Mobile Navigation */}

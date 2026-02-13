@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { Article } from "@/services";
+import { formatTimeAgo } from "@/lib/formatTimeAgo";
 
 interface QuickReadCardProps {
   item: Article;
@@ -12,18 +13,6 @@ interface QuickReadCardProps {
 
 const QuickReadCard = ({ item }: QuickReadCardProps) => {
   const locale = useLocale();
-
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    );
-
-    if (diffInHours < 1) return "Just now";
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    return `${Math.floor(diffInHours / 24)}d ago`;
-  };
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 max-w-sm mx-auto">

@@ -5,7 +5,7 @@ import { motion, PanInfo } from 'framer-motion';
 import { Share2, Clock, ArrowRight, ChevronUp } from 'lucide-react';
 import { FeaturedImage } from '@/components/FeaturedImage';
 import { useTranslations } from 'next-intl';
-import { formatDistanceToNow } from 'date-fns';
+import { formatTimeAgo } from '@/lib/formatTimeAgo';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -182,7 +182,7 @@ export function InshortCard({
                 {item.publishedAt && (
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(item.publishedAt), { addSuffix: true })}
+                    {formatTimeAgo(item.publishedAt)}
                   </span>
                 )}
               </div>

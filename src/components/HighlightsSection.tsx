@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
+import { formatTimeAgo } from "@/lib/formatTimeAgo";
 
 interface Highlight {
   id: string;
@@ -55,18 +56,7 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
     return null;
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    );
-
-    if (diffInHours < 1) return "Just now";
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 48) return "Yesterday";
-    return date.toLocaleDateString();
-  };
+  const formatDate = (dateString: string) => formatTimeAgo(dateString);
 
   const formatNumber = (num: number | undefined) => {
     if (!num || num === 0) return '0';

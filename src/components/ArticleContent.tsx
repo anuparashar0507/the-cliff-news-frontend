@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Share2, Volume2, VolumeX, Clock, Calendar } from 'lucide-react';
 import { FeaturedImage } from '@/components/FeaturedImage';
 import { useTranslations } from 'next-intl';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatTimeAgo } from '@/lib/formatTimeAgo';
 import { cn } from '@/lib/utils';
 import { ArticleSkeleton } from '@/components/skeletons/CardSkeleton';
 import { Button } from '@/components/ui/button';
@@ -305,7 +305,7 @@ export default function ArticleContent({
           {article.publishedAt && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>{format(new Date(article.publishedAt), 'PPP')}</span>
+              <span>{formatTimeAgo(article.publishedAt)}</span>
             </div>
           )}
 

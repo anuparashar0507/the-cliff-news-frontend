@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { Article } from "@/services";
+import { formatTimeAgo } from "@/lib/formatTimeAgo";
 
 interface EnhancedHeroSectionProps {
   featuredArticles: Article[];
@@ -28,14 +29,7 @@ const EnhancedHeroSection = ({
     return () => clearInterval(interval);
   }, [featuredArticles.length, isAutoPlay]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+  const formatDate = (dateString: string) => formatTimeAgo(dateString);
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index);

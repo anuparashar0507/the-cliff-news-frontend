@@ -508,7 +508,7 @@ const InfiniteVideoScroll = ({
   onNavigateHome
 }: InfiniteVideoScrollProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [windowHeight, setWindowHeight] = useState(800); // Default fallback
   const containerRef = useRef<HTMLDivElement>(null);

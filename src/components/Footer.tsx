@@ -76,6 +76,22 @@ const Footer = () => {
                   Highlights
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={`/${currentLocale}/book-advertisement`}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Book Advertisement
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={`/${currentLocale}/subscribe`}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Subscribe
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -160,7 +176,18 @@ const Footer = () => {
 
         <div className="border-t border-border mt-8 pt-8 text-center">
           <p className="text-muted-foreground text-sm">
-            &copy; 2024 The Cliff News. All rights reserved.
+            &copy; {new Date().getFullYear()} The Cliff News. All rights reserved.
+          </p>
+          <p className="text-muted-foreground text-xs mt-2">
+            Technology Partner:{" "}
+            <a
+              href="https://cysmiqai.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Cysmiq AI
+            </a>
           </p>
         </div>
       </div>
