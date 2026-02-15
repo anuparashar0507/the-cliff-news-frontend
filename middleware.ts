@@ -13,6 +13,6 @@ export const config = {
     // - … if they start with `/api`, `/_next` or `/_vercel`
     // - … the ones containing a dot (e.g. `favicon.ico`, `app-ads.txt`)
     // - … app-ads.txt specifically for AdMob verification
-    '/((?!api|_next|_vercel|app-ads\\.txt|.*\\..*).*)'
+    '/((?!api|_next|_vercel|\\.well-known|app-ads\\.txt|.*\\..*).*)'
   ]
 };

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Images } from 'lucide-react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { ArrowLeft, Images, Calendar, Loader2 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import MasonryImageGrid from '@/components/MasonryImageGrid';
 import type { ImageItem } from '@/components/MasonryImageGrid';
@@ -27,74 +27,125 @@ interface HighlightData {
 const HighlightsClient = () => {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const locale = params.locale as string || 'en';
-  const page = parseInt(searchParams.get('page') || '1');
 
   const [highlights, setHighlights] = useState<ImageItem[]>([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 1
-  });
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchHighlights = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/highlights?page=${page}&limit=20`
-        );
+  // Date filter state
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch highlights');
-        }
+  const loaderRef = useRef<HTMLDivElement>(null);
 
-        const data = await response.json();
+  const fetchHighlights = useCallback(async (pageNum: number, append: boolean = false) => {
+    if (append) setLoadingMore(true);
+    else setIsLoading(true);
 
-        // Transform API data to ImageItem format
-        const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: HighlightData) => ({
-          id: highlight.id,
-          title: highlight.title,
-          imageUrl: highlight.imageUrl,
-          caption: highlight.caption,
-          category: highlight.category,
-          date: highlight.date || highlight.createdAt,
-          allowDownload: highlight.allowDownload !== false,
-          allowSharing: highlight.allowSharing !== false,
-          viewCount: highlight.viewCount || 0,
-          downloadCount: highlight.downloadCount || 0,
-          shareCount: highlight.shareCount || 0,
-        }));
+    try {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/highlights`);
+      url.searchParams.set('page', pageNum.toString());
+      url.searchParams.set('limit', '20');
+      if (startDate) url.searchParams.set('startDate', startDate);
+      if (endDate) url.searchParams.set('endDate', endDate);
 
-        setHighlights(transformedHighlights);
-        setPagination(data.pagination || {
-          page: 1,
-          limit: 20,
-          total: transformedHighlights.length,
-          pages: 1
-        });
-      } catch (error) {
-        console.error('Error fetching highlights:', error);
-        setError('Failed to load highlights');
-      } finally {
-        setIsLoading(false);
+      const response = await fetch(url.toString());
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch highlights');
       }
-    };
 
-    fetchHighlights();
-  }, [page]);
+      const data = await response.json();
 
-  const handlePageChange = (newPage: number) => {
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set('page', newPage.toString());
-    router.push(`/${locale}/highlights?${searchParams.toString()}`);
+      // Transform API data to ImageItem format
+      const transformedHighlights: ImageItem[] = (data.highlights || []).map((highlight: HighlightData) => ({
+        id: highlight.id,
+        title: highlight.title,
+        imageUrl: highlight.imageUrl,
+        caption: highlight.caption,
+        category: highlight.category,
+        date: highlight.date || highlight.createdAt,
+        allowDownload: highlight.allowDownload !== false,
+        allowSharing: highlight.allowSharing !== false,
+        viewCount: highlight.viewCount || 0,
+        downloadCount: highlight.downloadCount || 0,
+        shareCount: highlight.shareCount || 0,
+      }));
+
+      if (append) {
+        setHighlights(prev => [...prev, ...transformedHighlights]);
+      } else {
+        setHighlights(transformedHighlights);
+      }
+
+      const pagination = data.pagination || { page: 1, pages: 1 };
+      setPage(pageNum);
+      setHasMore(pageNum < pagination.pages);
+    } catch (err) {
+      console.error('Error fetching highlights:', err);
+      if (!append) setError('Failed to load highlights');
+    } finally {
+      if (append) setLoadingMore(false);
+      else setIsLoading(false);
+    }
+  }, [startDate, endDate]);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchHighlights(1);
+  }, [fetchHighlights]);
+
+  // Fetch more for infinite scroll
+  const fetchMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    await fetchHighlights(page + 1, true);
+  }, [loadingMore, hasMore, page, fetchHighlights]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          fetchMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetchMore, hasMore, loadingMore]);
+
+  // Handle applying date filter
+  const handleApplyFilter = () => {
+    setHighlights([]);
+    setPage(1);
+    setHasMore(true);
+    fetchHighlights(1);
   };
 
-  if (isLoading) {
+  // Handle clearing date filter
+  const handleClearFilter = () => {
+    setStartDate('');
+    setEndDate('');
+    setHighlights([]);
+    setPage(1);
+    setHasMore(true);
+    // We need to fetch without dates, but since state updates are async,
+    // we fetch directly with empty dates
+  };
+
+  // When startDate/endDate are cleared, re-fetch
+  // This is handled by the fetchHighlights dependency on startDate/endDate via useEffect
+
+  if (isLoading && highlights.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         {/* Hero Section */}
@@ -198,6 +249,50 @@ const HighlightsClient = () => {
         </div>
       </section>
 
+      {/* Date Filter Bar */}
+      <section className="bg-orange-50/50 dark:bg-orange-900/5 border-b border-orange-100 dark:border-orange-900/20">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-orange-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Date:</span>
+            </div>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              max={new Date().toISOString().split('T')[0]}
+            />
+            <span className="text-gray-400">to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              max={new Date().toISOString().split('T')[0]}
+            />
+            <Button
+              size="sm"
+              onClick={handleApplyFilter}
+              className="bg-orange-600 hover:bg-orange-700 text-white text-sm"
+            >
+              Apply
+            </Button>
+            {(startDate || endDate) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilter}
+                className="text-orange-600 text-sm"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Content */}
       <section className="py-16 bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4">
@@ -216,7 +311,6 @@ const HighlightsClient = () => {
                 </Button>
               </div>
 
-
               {/* Masonry Grid */}
               <MasonryImageGrid
                 images={highlights}
@@ -225,55 +319,18 @@ const HighlightsClient = () => {
                 showMetadata={false}
               />
 
-              {/* Pagination */}
-              {pagination.pages > 1 && (
-                <div className="flex justify-center items-center space-x-2">
-                  {/* Previous Page */}
-                  {pagination.page > 1 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      className="border-orange-200 text-orange-600 hover:bg-orange-50"
-                    >
-                      Previous
-                    </Button>
-                  )}
-
-                  {/* Page Numbers */}
-                  {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                    const pageNum = Math.max(1, pagination.page - 2) + i;
-                    if (pageNum > pagination.pages) return null;
-
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={pageNum === pagination.page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                        className={pageNum === pagination.page
-                          ? "bg-orange-600 hover:bg-orange-700 text-white"
-                          : "border-orange-200 text-orange-600 hover:bg-orange-50"
-                        }
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-
-                  {/* Next Page */}
-                  {pagination.page < pagination.pages && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      className="border-orange-200 text-orange-600 hover:bg-orange-50"
-                    >
-                      Next
-                    </Button>
-                  )}
-                </div>
-              )}
+              {/* Infinite scroll trigger */}
+              <div ref={loaderRef} className="flex justify-center py-8">
+                {loadingMore && (
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Loading more highlights...</span>
+                  </div>
+                )}
+                {!hasMore && highlights.length > 0 && (
+                  <p className="text-sm text-gray-500">You&apos;ve reached the end</p>
+                )}
+              </div>
             </>
           ) : (
             <div className="text-center py-16">

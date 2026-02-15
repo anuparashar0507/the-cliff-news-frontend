@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Menu, X, Moon, Sun, ChevronDown, Home, FileText, ImageIcon, Newspaper, Tag, Loader2 } from "lucide-react";
+import { Search, Menu, X, Moon, Sun, ChevronDown, Home, FileText, ImageIcon, Newspaper, Tag, Loader2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -388,8 +388,8 @@ const Header = () => {
               )}
             </Button>
 
-            {/* Language Switcher - Commented as requested */}
-            {/* <DropdownMenu>
+            {/* Language Switcher */}
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -403,16 +403,16 @@ const Header = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link href="/en" className="cursor-pointer">
-                    🇺🇸 English
+                    English
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/hi" className="cursor-pointer">
-                    🇮🇳 हिंदी
+                    हिंदी
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu> */}
+            </DropdownMenu>
           </div>
         </div>
       </div>

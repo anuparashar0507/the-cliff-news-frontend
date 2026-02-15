@@ -34,12 +34,13 @@ const QuickReadsSection: React.FC<QuickReadsSectionProps> = ({ locale }) => {
   const [quickReads, setQuickReads] = useState<InshortItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const language = locale === 'hi' ? 'HINDI' : 'ENGLISH';
 
   useEffect(() => {
     const fetchQuickReads = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inshorts?limit=6`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inshorts?limit=6&language=${language}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch quick reads');
@@ -55,7 +56,7 @@ const QuickReadsSection: React.FC<QuickReadsSectionProps> = ({ locale }) => {
     };
 
     fetchQuickReads();
-  }, []);
+  }, [language]);
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : quickReads.length - 1));

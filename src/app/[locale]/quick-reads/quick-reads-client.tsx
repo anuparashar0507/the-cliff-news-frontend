@@ -31,6 +31,7 @@ const QuickReadsClient = () => {
   const params = useParams();
   const router = useRouter();
   const locale = params.locale as string || 'en';
+  const language = locale === 'hi' ? 'HINDI' : 'ENGLISH';
 
   const [quickReads, setQuickReads] = useState<InshortItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +44,7 @@ const QuickReadsClient = () => {
     const fetchQuickReads = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inshorts?limit=20`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inshorts?limit=20&language=${language}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch quick reads');
@@ -60,7 +61,7 @@ const QuickReadsClient = () => {
     };
 
     fetchQuickReads();
-  }, []);
+  }, [language]);
 
   const handleSwipeUp = () => {
     if (currentIndex < quickReads.length - 1) {
@@ -75,7 +76,7 @@ const QuickReadsClient = () => {
 
     try {
       setIsLoadingMore(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inshorts?limit=20&offset=${quickReads.length}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/inshorts?limit=20&offset=${quickReads.length}&language=${language}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch more quick reads');
