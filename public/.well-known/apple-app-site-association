@@ -1,12 +1,10 @@
 {
   "applinks": {
+    "apps": [],
     "details": [
       {
-        "appIDs": ["D9752925GN.com.thecliff.news"],
-        "components": [
-          { "/": "/en/*" },
-          { "/": "/hi/*" }
-        ]
+        "appID": "D9752925GN.com.thecliff.news",
+        "paths": ["/en/*", "/hi/*"]
       }
     ]
   }
