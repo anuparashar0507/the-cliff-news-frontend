@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Clock, Calendar, Loader2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import MasonryImageGrid from '@/components/MasonryImageGrid';
 import type { ImageItem } from '@/components/MasonryImageGrid';
 import { NIT } from '@/services/nit';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from '@/components/ui/pagination';
 
 const NITClient = () => {
   const params = useParams();
@@ -15,8 +24,7 @@ const NITClient = () => {
 
   const [nitItems, setNitItems] = useState<ImageItem[]>([]);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,11 +32,8 @@ const NITClient = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  const loaderRef = useRef<HTMLDivElement>(null);
-
-  const fetchNITItems = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (append) setLoadingMore(true);
-    else setIsLoading(true);
+  const fetchNITItems = useCallback(async (pageNum: number) => {
+    setIsLoading(true);
 
     try {
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/nit`);
@@ -60,21 +65,16 @@ const NITClient = () => {
         shareCount: 0,
       }));
 
-      if (append) {
-        setNitItems(prev => [...prev, ...transformedNITs]);
-      } else {
-        setNitItems(transformedNITs);
-      }
+      setNitItems(transformedNITs);
 
       const pagination = data.pagination || { page: 1, pages: 1 };
       setPage(pageNum);
-      setHasMore(pageNum < pagination.pages);
+      setTotalPages(pagination.pages);
     } catch (err) {
       console.error('Error fetching NIT items:', err);
-      if (!append) setError('Failed to load NIT items');
+      setError('Failed to load NIT items');
     } finally {
-      if (append) setLoadingMore(false);
-      else setIsLoading(false);
+      setIsLoading(false);
     }
   }, [startDate, endDate]);
 
@@ -83,35 +83,17 @@ const NITClient = () => {
     fetchNITItems(1);
   }, [fetchNITItems]);
 
-  // Fetch more for infinite scroll
-  const fetchMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    await fetchNITItems(page + 1, true);
-  }, [loadingMore, hasMore, page, fetchNITItems]);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          fetchMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [fetchMore, hasMore, loadingMore]);
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === page) return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    fetchNITItems(newPage);
+  };
 
   // Handle applying date filter
   const handleApplyFilter = () => {
     setNitItems([]);
     setPage(1);
-    setHasMore(true);
     fetchNITItems(1);
   };
 
@@ -121,9 +103,23 @@ const NITClient = () => {
     setEndDate('');
     setNitItems([]);
     setPage(1);
-    setHasMore(true);
-    // When startDate/endDate are cleared, re-fetch is triggered
-    // by the fetchNITItems dependency on startDate/endDate via useEffect
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push('ellipsis');
+      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+        pages.push(i);
+      }
+      if (page < totalPages - 2) pages.push('ellipsis');
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   if (isLoading && nitItems.length === 0) {
@@ -292,26 +288,64 @@ const NITClient = () => {
                 </Button>
               </div>
 
-              {/* Masonry Grid */}
-              <MasonryImageGrid
-                images={nitItems}
-                columns={4}
-                className="mb-12"
-                showMetadata={false}
-              />
-
-              {/* Infinite scroll trigger */}
-              <div ref={loaderRef} className="flex justify-center py-8">
-                {loadingMore && (
+              {/* Loading overlay for page changes */}
+              {isLoading && (
+                <div className="flex justify-center py-8">
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <span className="text-sm">Loading more notices...</span>
+                    <span className="text-sm">Loading notices...</span>
                   </div>
-                )}
-                {!hasMore && nitItems.length > 0 && (
-                  <p className="text-sm text-gray-500">You&apos;ve reached the end</p>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Masonry Grid */}
+              {!isLoading && (
+                <MasonryImageGrid
+                  images={nitItems}
+                  columns={4}
+                  className="mb-12"
+                  showMetadata={false}
+                />
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => handlePageChange(page - 1)}
+                          className={page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      {getPageNumbers().map((pageNum, idx) =>
+                        pageNum === 'ellipsis' ? (
+                          <PaginationItem key={`ellipsis-${idx}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => handlePageChange(pageNum)}
+                              isActive={pageNum === page}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => handlePageChange(page + 1)}
+                          className={page >= totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-16">
