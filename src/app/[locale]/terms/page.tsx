@@ -63,8 +63,9 @@ export default function TermsPage() {
           If you have any questions about these Terms of Service, please contact us at:
         </p>
         <p className="mb-4">
-          Email: legal@cliffnews.in<br />
-          Phone: +91 (555) 123-4567
+          Email: Thecliffnewspaper@gmail.com<br />
+          Phone: +91 87709 67135<br />
+          Address: 374, G Sector, Ayodhya Nagar, Bhopal, Madhya Pradesh, India
         </p>
       </div>
     </div>
