@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { z } from "zod";
 
 const ContactSchema = z.object({
@@ -18,13 +18,14 @@ const escapeHtml = (str: string) =>
     .replace(/'/g, "&#39;");
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
   const toAddress = (
-    process.env.CONTACT_TO_EMAIL || "thecliffnewspaper@gmail.com"
+    process.env.CONTACT_TO_EMAIL || gmailUser || ""
   ).toLowerCase();
-  const fromAddress = process.env.CONTACT_FROM_EMAIL || "onboarding@resend.dev";
 
-  if (!apiKey) {
+  if (!gmailUser || !gmailPass || !toAddress) {
+    console.error("Contact route: missing GMAIL_USER / GMAIL_APP_PASSWORD / CONTACT_TO_EMAIL");
     return NextResponse.json(
       { error: "Email service not configured" },
       { status: 500 }
@@ -47,7 +48,6 @@ export async function POST(request: NextRequest) {
   }
 
   const { name, email, subject, message } = parsed.data;
-  const resend = new Resend(apiKey);
 
   const html = `
     <div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#111">
@@ -63,24 +63,21 @@ export async function POST(request: NextRequest) {
   `;
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: `The Cliff News Contact <${fromAddress}>`,
-      to: [toAddress],
-      replyTo: email,
-      subject: `[Contact] ${subject}`,
-      html,
-      text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: gmailUser, pass: gmailPass },
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return NextResponse.json(
-        { error: "Failed to send message" },
-        { status: 502 }
-      );
-    }
+    await transporter.sendMail({
+      from: `"The Cliff News Contact" <${gmailUser}>`,
+      to: toAddress,
+      replyTo: `"${name}" <${email}>`,
+      subject: `[Contact] ${subject}`,
+      text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
+      html,
+    });
 
-    return NextResponse.json({ ok: true, id: data?.id });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Contact route error:", err);
     return NextResponse.json(

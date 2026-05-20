@@ -151,7 +151,7 @@ const NITClient = () => {
             <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-xl break-inside-avoid mb-4">
-                  <div className={`aspect-[${Math.random() > 0.5 ? '3/4' : '4/5'}] rounded-xl`}></div>
+                  <div className={i % 2 === 0 ? "aspect-[3/4] rounded-xl" : "aspect-[4/5] rounded-xl"}></div>
                 </div>
               ))}
             </div>
