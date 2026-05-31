@@ -2,16 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { Calendar, Share2 } from "lucide-react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import EPaperThumbnail from "./EPaperThumbnail";
 import { epapersApi } from "@/services";
 import { Button } from "@/components/ui/button";
+import AppDownloadModal from "./AppDownloadModal";
 
-const EPaperViewerModal = dynamic(() => import("./EPaperViewerModal"), {
-  ssr: false,
-});
+// In-browser PDF viewer is gated behind the mobile app for now.
+// Keep these commented so re-enable is a one-line revert.
+// import dynamic from "next/dynamic";
+// const EPaperViewerModal = dynamic(() => import("./EPaperViewerModal"), {
+//   ssr: false,
+// });
 
 interface EPaperDisplay {
   language: string;
@@ -22,8 +25,9 @@ interface EPaperDisplay {
 }
 
 const StreamlinedEPaperSection = () => {
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [selectedPaper, setSelectedPaper] = useState<EPaperDisplay | null>(null);
+  const [appModalOpen, setAppModalOpen] = useState(false);
+  // const [isViewerOpen, setIsViewerOpen] = useState(false); // re-enable with EPaperViewerModal
+  // const [selectedPaper, setSelectedPaper] = useState<EPaperDisplay | null>(null);
   const [mounted, setMounted] = useState(false);
   const [englishPaper, setEnglishPaper] = useState<EPaperDisplay | null>(null);
   const [hindiPaper, setHindiPaper] = useState<EPaperDisplay | null>(null);
@@ -71,15 +75,19 @@ const StreamlinedEPaperSection = () => {
     fetchEPapers();
   }, []);
 
-  const handleEPaperClick = (paper: EPaperDisplay) => {
-    setSelectedPaper(paper);
-    setIsViewerOpen(true);
+  const handleEPaperClick = () => {
+    setAppModalOpen(true);
   };
 
-  const handleCloseViewer = () => {
-    setIsViewerOpen(false);
-    setSelectedPaper(null);
-  };
+  // Original viewer handlers — restore alongside EPaperViewerModal when re-enabling.
+  // const handleEPaperClick = (paper: EPaperDisplay) => {
+  //   setSelectedPaper(paper);
+  //   setIsViewerOpen(true);
+  // };
+  // const handleCloseViewer = () => {
+  //   setIsViewerOpen(false);
+  //   setSelectedPaper(null);
+  // };
 
   const handleShare = (paper: EPaperDisplay) => {
     const formattedDate = paper.date.toLocaleDateString(
@@ -211,7 +219,7 @@ const StreamlinedEPaperSection = () => {
                 {/* Thumbnail - No background, clean shadow */}
                 <div
                   className="group-hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
-                  onClick={() => handleEPaperClick(englishPaper)}
+                  onClick={() => handleEPaperClick()} /* was: handleEPaperClick(englishPaper) */
                 >
                   {englishPaper.thumbnailUrl ? (
                     <div className="shadow-2xl hover:shadow-primary/20 transition-shadow duration-300">
@@ -279,7 +287,7 @@ const StreamlinedEPaperSection = () => {
                 {/* Thumbnail - No background, clean shadow */}
                 <div
                   className="group-hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
-                  onClick={() => handleEPaperClick(hindiPaper)}
+                  onClick={() => handleEPaperClick()} /* was: handleEPaperClick(hindiPaper) */
                 >
                   {hindiPaper.thumbnailUrl ? (
                     <img
@@ -320,7 +328,14 @@ const StreamlinedEPaperSection = () => {
         </div>
       </section>
 
-      {/* PDF Viewer Modal */}
+      {/* App-download modal — replaces in-browser PDF viewing. */}
+      <AppDownloadModal
+        open={appModalOpen}
+        onOpenChange={setAppModalOpen}
+        variant="epaper"
+      />
+
+      {/* Original in-browser PDF viewer — re-enable when web reading returns.
       {selectedPaper && (
         <EPaperViewerModal
           isOpen={isViewerOpen}
@@ -329,6 +344,7 @@ const StreamlinedEPaperSection = () => {
           title={selectedPaper.title}
         />
       )}
+      */}
     </>
   );
 };

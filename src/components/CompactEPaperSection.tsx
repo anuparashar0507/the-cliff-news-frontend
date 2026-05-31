@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Loader2, Download, Filter, Globe, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { Calendar, Loader2, Globe, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { epapersApi, EPaper } from "@/services/epapers";
 import EPaperThumbnail from "./EPaperThumbnail";
-import EPaperViewerModal from "./EPaperViewerModal";
+import AppDownloadModal from "./AppDownloadModal";
+// In-browser PDF viewer is gated behind the mobile app for now.
+// Keep these imports commented so re-enable is a one-line revert.
+// import EPaperViewerModal from "./EPaperViewerModal";
+// import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +21,8 @@ import {
 const CompactEPaperSection = () => {
   const [epapers, setEpapers] = useState<EPaper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedEpaper, setSelectedEpaper] = useState<EPaper | null>(null);
+  const [appModalOpen, setAppModalOpen] = useState(false);
+  // const [selectedEpaper, setSelectedEpaper] = useState<EPaper | null>(null); // re-enable with EPaperViewerModal
   const [error, setError] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<'all' | 'english' | 'hindi'>('all');
   const [dateFilter, setDateFilter] = useState<string>('');
@@ -332,7 +337,7 @@ const CompactEPaperSection = () => {
                     {english && (
                       <div
                         className="flex flex-col items-center group cursor-pointer"
-                        onClick={() => setSelectedEpaper(english)}
+                        onClick={() => setAppModalOpen(true)} /* was: () => setSelectedEpaper(english) */
                       >
                         {/* Edition Info - Above Thumbnail */}
                         <div className="mb-4 text-center">
@@ -367,6 +372,7 @@ const CompactEPaperSection = () => {
 
                         {/* Action Buttons */}
                         <div className="mt-4 flex items-center gap-3">
+                          {/* Download disabled while web reading is gated behind the app.
                           <a
                             href={english.pdfUrl}
                             download
@@ -376,6 +382,7 @@ const CompactEPaperSection = () => {
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </a>
+                          */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -394,7 +401,7 @@ const CompactEPaperSection = () => {
                     {hindi && (
                       <div
                         className="flex flex-col items-center group cursor-pointer"
-                        onClick={() => setSelectedEpaper(hindi)}
+                        onClick={() => setAppModalOpen(true)} /* was: () => setSelectedEpaper(hindi) */
                       >
                         {/* Edition Info - Above Thumbnail */}
                         <div className="mb-4 text-center">
@@ -429,6 +436,7 @@ const CompactEPaperSection = () => {
 
                         {/* Action Buttons */}
                         <div className="mt-4 flex items-center gap-3">
+                          {/* Download disabled while web reading is gated behind the app.
                           <a
                             href={hindi.pdfUrl}
                             download
@@ -438,6 +446,7 @@ const CompactEPaperSection = () => {
                             <Download className="h-4 w-4 mr-2" />
                             डाउनलोड
                           </a>
+                          */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -486,7 +495,14 @@ const CompactEPaperSection = () => {
         </div>
       </div>
 
-      {/* E-Paper Modal */}
+      {/* App-download modal — replaces in-browser PDF viewing. */}
+      <AppDownloadModal
+        open={appModalOpen}
+        onOpenChange={setAppModalOpen}
+        variant="epaper"
+      />
+
+      {/* Original in-browser PDF viewer — re-enable when web reading returns.
       {selectedEpaper && (
         <EPaperViewerModal
           isOpen={!!selectedEpaper}
@@ -495,6 +511,7 @@ const CompactEPaperSection = () => {
           title={`${selectedEpaper.language === 'english' ? 'English' : 'हिंदी'} Edition - ${formatDate(selectedEpaper.date).date}`}
         />
       )}
+      */}
     </div>
   );
 };
